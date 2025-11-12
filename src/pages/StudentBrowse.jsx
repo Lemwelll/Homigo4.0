@@ -1,0 +1,193 @@
+import React, { useState } from 'react'
+import DashboardLayout from '../components/DashboardLayout'
+import { useStudent } from '../context/StudentContext'
+import { useNavigate } from 'react-router-dom'
+import { Search, Filter, MapPin, DollarSign, Heart, CheckCircle } from 'lucide-react'
+
+const StudentBrowse = () => {
+  const navigate = useNavigate()
+  const { properties, toggleFavorite, isFavorite } = useStudent()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [priceRange, setPriceRange] = useState('all')
+  const [city, setCity] = useState('all')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+
+  const filteredProperties = properties.filter(property => {
+    const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         property.location.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesPrice = priceRange === 'all' || property.priceRange === priceRange
+    const matchesCity = city === 'all' || property.city === city
+    const matchesVerified = !verifiedOnly || property.verified
+    
+    return matchesSearch && matchesPrice && matchesCity && matchesVerified
+  })
+
+  const handleFavoriteClick = (e, propertyId) => {
+    e.stopPropagation()
+    toggleFavorite(propertyId)
+  }
+
+  return (
+    <DashboardLayout userType="student">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Browse Properties</h1>
+          <p className="text-gray-600">Find your perfect home from {properties.length} available listings</p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="card">
+          <div className="grid md:grid-cols-4 gap-4 mb-4">
+            <div className="md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by property name or location..."
+                  className="input-field pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  className="input-field pl-10 appearance-none"
+                  value={priceRange}
+                  onChange={(e) => setPriceRange(e.target.value)}
+                >
+                  <option value="all">All Prices</option>
+                  <option value="0-5000">₱0 - ₱5,000</option>
+                  <option value="5000-10000">₱5,000 - ₱10,000</option>
+                  <option value="10000-15000">₱10,000 - ₱15,000</option>
+                  <option value="15000+">₱15,000+</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  className="input-field pl-10 appearance-none"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                >
+                  <option value="all">All Cities</option>
+                  <option value="Quezon City">Quezon City</option>
+                  <option value="Manila">Manila</option>
+                  <option value="Makati">Makati</option>
+                  <option value="Pasig">Pasig</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-4 h-4 text-primary-500 rounded"
+                checked={verifiedOnly}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
+              />
+              <span className="text-sm text-gray-700">Show verified properties only</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">
+            <span className="font-bold text-gray-800">{filteredProperties.length}</span> properties found
+          </p>
+          {(searchQuery || priceRange !== 'all' || city !== 'all' || verifiedOnly) && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setPriceRange('all')
+                setCity('all')
+                setVerifiedOnly(false)
+              }}
+              className="text-primary-500 hover:text-primary-600 font-semibold text-sm"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Properties Grid */}
+        {filteredProperties.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map((property) => (
+              <div
+                key={property.id}
+                className="card p-0 overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 relative group"
+              >
+                <div className="relative">
+                  <img
+                    src={property.image}
+                    alt={property.title}
+                    className="w-full h-48 object-cover"
+                    onClick={() => navigate(`/property/${property.id}`)}
+                  />
+                  {property.verified && (
+                    <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Verified</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={(e) => handleFavoriteClick(e, property.id)}
+                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 ${
+                      isFavorite(property.id)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`w-5 h-5 ${isFavorite(property.id) ? 'fill-current' : ''}`} />
+                  </button>
+                  <div className="absolute bottom-3 left-3 bg-primary-500 text-white px-4 py-2 rounded-lg font-bold">
+                    ₱{property.price.toLocaleString()}/mo
+                  </div>
+                </div>
+                <div className="p-5" onClick={() => navigate(`/property/${property.id}`)}>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">{property.title}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{property.location}</p>
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>{property.bedrooms} Bed • {property.bathrooms} Bath</span>
+                  </div>
+                  <button className="mt-4 w-full btn-primary text-sm py-2">
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="card text-center py-12">
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Properties Found</h3>
+            <p className="text-gray-600 mb-4">Try adjusting your filters or search terms</p>
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setPriceRange('all')
+                setCity('all')
+                setVerifiedOnly(false)
+              }}
+              className="btn-primary inline-block"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  )
+}
+
+export default StudentBrowse
