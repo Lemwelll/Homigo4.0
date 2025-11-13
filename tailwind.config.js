@@ -32,6 +32,32 @@ export default {
           900: '#00170a',
         },
       },
+      keyframes: {
+        'fade-in-up': {
+          '0%': { 
+            opacity: '0', 
+            transform: 'translateY(20px)' 
+          },
+          '100%': { 
+            opacity: '1', 
+            transform: 'translateY(0)' 
+          },
+        },
+        'fade-in-delay': {
+          '0%': { 
+            opacity: '0', 
+            transform: 'translateY(10px)' 
+          },
+          '100%': { 
+            opacity: '1', 
+            transform: 'translateY(0)' 
+          },
+        },
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.8s ease-out',
+        'fade-in-delay': 'fade-in-delay 0.8s ease-out 0.3s both',
+      },
     },
   },
   plugins: [],

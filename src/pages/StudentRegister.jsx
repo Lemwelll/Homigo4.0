@@ -23,9 +23,12 @@ const StudentRegister = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-            <Home className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-primary-600">Homigo</span>
+          <Link to="/" className="inline-flex items-center justify-center mb-4">
+            <img 
+              src="/assets/Homigo.png" 
+              alt="Homigo Logo" 
+              className="h-16 w-auto md:h-20 lg:h-24 object-contain drop-shadow-lg transition-transform duration-200 hover:scale-105" 
+            />
           </Link>
           <h2 className="text-3xl font-bold text-gray-800">Student Registration</h2>
           <p className="text-gray-600 mt-2">Create your account and start finding your perfect home</p>

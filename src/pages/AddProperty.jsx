@@ -1,13 +1,18 @@
-import React, { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useNavigate } from 'react-router-dom'
 import { useProperties } from '../context/PropertyContext'
-import { Upload, CheckCircle, Home } from 'lucide-react'
+import { Upload, CheckCircle, Home, X } from 'lucide-react'
 
 const AddProperty = () => {
   const navigate = useNavigate()
   const { addProperty } = useProperties()
+  const fileInputRef = useRef(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [previewUrls, setPreviewUrls] = useState([])
+  const [imageError, setImageError] = useState('')
+  const [base64Images, setBase64Images] = useState([])
   const [formData, setFormData] = useState({
     title: '',
     location: '',
@@ -20,6 +25,33 @@ const AddProperty = () => {
     image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'
   })
 
+  // Load saved draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('homigo_property_draft')
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft)
+        setFormData(draft.formData)
+        if (draft.images && draft.images.length > 0) {
+          setBase64Images(draft.images)
+          setPreviewUrls(draft.images)
+        }
+      } catch (error) {
+        console.error('Error loading draft:', error)
+      }
+    }
+  }, [])
+
+  // Auto-save draft to localStorage whenever form data or images change
+  useEffect(() => {
+    const draft = {
+      formData,
+      images: base64Images,
+      savedAt: new Date().toISOString()
+    }
+    localStorage.setItem('homigo_property_draft', JSON.stringify(draft))
+  }, [formData, base64Images])
+
   const amenitiesList = ['WiFi', 'Air Conditioning', 'Parking', 'Security', 'Water', 'Electricity', 'Furnished', 'Kitchen']
 
   const handleAmenityToggle = (amenity) => {
@@ -31,9 +63,111 @@ const AddProperty = () => {
     }))
   }
 
+  // Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = error => reject(error)
+    })
+  }
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files)
+    setImageError('')
+
+    // Validate files
+    const validFiles = []
+    const errors = []
+
+    files.forEach(file => {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        errors.push(`${file.name} is not an image file`)
+        return
+      }
+
+      // Check file size (10MB = 10 * 1024 * 1024 bytes)
+      if (file.size > 10 * 1024 * 1024) {
+        errors.push(`${file.name} exceeds 10MB`)
+        return
+      }
+
+      // Check file extension
+      const validExtensions = ['png', 'jpg', 'jpeg']
+      const extension = file.name.split('.').pop().toLowerCase()
+      if (!validExtensions.includes(extension)) {
+        errors.push(`${file.name} must be PNG, JPG, or JPEG`)
+        return
+      }
+
+      validFiles.push(file)
+    })
+
+    if (errors.length > 0) {
+      setImageError(errors.join('. '))
+    }
+
+    if (validFiles.length > 0) {
+      // Add to existing files
+      const newFiles = [...selectedFiles, ...validFiles]
+      setSelectedFiles(newFiles)
+
+      // Convert to base64 for localStorage
+      const base64Promises = validFiles.map(file => fileToBase64(file))
+      const newBase64Images = await Promise.all(base64Promises)
+      const allBase64 = [...base64Images, ...newBase64Images]
+      setBase64Images(allBase64)
+
+      // Create preview URLs (use base64 for previews too)
+      setPreviewUrls(allBase64)
+
+      console.log('Selected images:', newFiles)
+    }
+
+    // Reset input
+    e.target.value = ''
+  }
+
+  const handleRemoveImage = (index) => {
+    // Remove from arrays
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index))
+    setPreviewUrls(previewUrls.filter((_, i) => i !== index))
+    setBase64Images(base64Images.filter((_, i) => i !== index))
+  }
+
+  const handleChooseFiles = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    const newProperty = addProperty(formData)
+    
+    // Save to localStorage with images
+    const propertyData = {
+      ...formData,
+      images: base64Images,
+      createdAt: new Date().toISOString(),
+      id: Date.now()
+    }
+
+    // Get existing properties from localStorage
+    const existingProperties = JSON.parse(localStorage.getItem('homigo_temp_properties') || '[]')
+    existingProperties.push(propertyData)
+    localStorage.setItem('homigo_temp_properties', JSON.stringify(existingProperties))
+
+    // Also add to context (for immediate display)
+    addProperty({
+      ...formData,
+      image: base64Images[0] || formData.image
+    })
+
+    // Clear the draft
+    localStorage.removeItem('homigo_property_draft')
+
+    console.log('Property saved with images:', propertyData)
+    
     setShowSuccess(true)
     
     setTimeout(() => {
@@ -212,14 +346,60 @@ const AddProperty = () => {
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 mb-1 font-semibold">Upload Property Photos</p>
               <p className="text-sm text-gray-500">PNG, JPG up to 10MB (Multiple files allowed)</p>
-              <input type="file" className="hidden" accept="image/*" multiple />
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                className="hidden" 
+                accept="image/png,image/jpg,image/jpeg" 
+                multiple 
+                onChange={handleFileChange}
+              />
               <button
                 type="button"
-                className="mt-4 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                onClick={handleChooseFiles}
+                className="mt-4 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Choose Files
               </button>
             </div>
+
+            {/* Error Message */}
+            {imageError && (
+              <div className="mt-3 text-sm text-red-600">
+                {imageError}
+              </div>
+            )}
+
+            {/* Image Previews */}
+            {previewUrls.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Selected Images ({selectedFiles.length})
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded truncate">
+                        {selectedFiles[index]?.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submit Buttons */}

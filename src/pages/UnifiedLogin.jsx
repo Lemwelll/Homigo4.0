@@ -62,9 +62,12 @@ const UnifiedLogin = () => {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-            <Home className="w-12 h-12 text-primary-500" />
-            <span className="text-4xl font-bold text-primary-600">Homigo</span>
+          <Link to="/" className="inline-flex items-center justify-center mb-4">
+            <img 
+              src="/assets/Homigo.png" 
+              alt="Homigo Logo" 
+              className="h-20 w-auto md:h-24 lg:h-28 object-contain drop-shadow-lg transition-transform duration-200 hover:scale-105" 
+            />
           </Link>
           <h2 className="text-2xl font-bold text-gray-800">Welcome Back!</h2>
           <p className="text-gray-600 mt-2">Sign in to continue</p>

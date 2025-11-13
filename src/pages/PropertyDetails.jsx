@@ -1,13 +1,19 @@
-import React from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useStudent } from '../context/StudentContext'
+import { useBooking } from '../context/BookingContext'
+import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft } from 'lucide-react'
 
 const PropertyDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { properties, toggleFavorite, isFavorite } = useStudent()
+  const { createBooking, isPropertyBooked } = useBooking()
+  const [toast, setToast] = useState(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   
   const property = properties.find(p => p.id === parseInt(id))
   
@@ -27,6 +33,24 @@ const PropertyDetails = () => {
   const similarProperties = properties
     .filter(p => p.id !== property.id && p.city === property.city)
     .slice(0, 3)
+
+  const alreadyBooked = isPropertyBooked(property.id)
+
+  const handleBookNow = () => {
+    if (alreadyBooked) {
+      setToast({ message: 'You already have a booking for this property!', type: 'info' })
+      return
+    }
+    setShowConfirmModal(true)
+  }
+
+  const confirmBooking = () => {
+    createBooking(property)
+    setToast({ message: 'Booking request sent successfully!', type: 'success' })
+    setTimeout(() => {
+      navigate('/student/bookings')
+    }, 2000)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,8 +148,16 @@ const PropertyDetails = () => {
                 <p className="text-gray-600">per month</p>
               </div>
 
-              <button className="btn-primary w-full mb-3">
-                Book Now
+              <button 
+                onClick={handleBookNow}
+                disabled={alreadyBooked}
+                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                  alreadyBooked
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'btn-primary'
+                }`}
+              >
+                {alreadyBooked ? 'Already Requested' : 'Book Now'}
               </button>
               <button
                 onClick={() => navigate('/student/messages')}
@@ -198,6 +230,26 @@ const PropertyDetails = () => {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm Booking Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmBooking}
+        title="Confirm Booking"
+        message={`Are you sure you want to book "${property.title}" for ₱${property.price.toLocaleString()}/month?`}
+        confirmText="Confirm Booking"
+        confirmColor="blue"
+      />
     </div>
   )
 }

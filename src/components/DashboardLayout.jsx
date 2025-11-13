@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 
 const DashboardLayout = ({ children, userType }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -54,9 +55,12 @@ const DashboardLayout = ({ children, userType }) => {
             </button>
 
             {/* Logo + App Name */}
-            <div className="flex items-center space-x-2">
-              <Home className="w-6 h-6 text-blue-600" />
-              <span className="text-xl font-bold text-blue-600">Homigo</span>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/assets/Homigo.png" 
+                alt="Homigo Logo" 
+                className="h-12 md:h-16 lg:h-20 w-auto object-contain drop-shadow-md transition-transform duration-200 hover:scale-105" 
+              />
             </div>
           </div>
 
@@ -84,7 +88,7 @@ const DashboardLayout = ({ children, userType }) => {
                   className="fixed inset-0 z-10"
                   onClick={() => setIsProfileOpen(false)}
                 ></div>
-                
+
                 {/* Dropdown Menu */}
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-20 border border-gray-100">
                   <div className="px-4 py-2 border-b border-gray-100">
@@ -125,15 +129,22 @@ const DashboardLayout = ({ children, userType }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
+        onMouseEnter={() => setIsSidebarExpanded(true)}
+        onMouseLeave={() => setIsSidebarExpanded(false)}
+        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white shadow-lg z-40 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 ${isSidebarExpanded ? 'lg:w-64' : 'lg:w-20'
+          } w-64`}
       >
-        <Sidebar userType={userType} onNavigate={closeSidebar} />
+        <Sidebar
+          userType={userType}
+          onNavigate={closeSidebar}
+          isExpanded={isSidebarExpanded}
+        />
       </div>
 
       {/* Main Content */}
-      <main className="pt-16 lg:ml-64 min-h-screen">
+      <main className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'lg:ml-64' : 'lg:ml-20'
+        }`}>
         <div className="p-4 sm:p-6 lg:p-8">
           {children}
         </div>

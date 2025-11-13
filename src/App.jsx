@@ -1,4 +1,3 @@
-import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import UnifiedLogin from './pages/UnifiedLogin'
@@ -8,11 +7,13 @@ import LandlordLogin from './pages/LandlordLogin'
 import LandlordRegister from './pages/LandlordRegister'
 import StudentDashboard from './pages/StudentDashboard'
 import StudentBrowse from './pages/StudentBrowse'
+import StudentBookings from './pages/StudentBookings'
 import StudentFavorites from './pages/StudentFavorites'
 import StudentMessages from './pages/StudentMessages'
 import StudentSettings from './pages/StudentSettings'
 import LandlordDashboard from './pages/LandlordDashboard'
 import LandlordProperties from './pages/LandlordProperties'
+import LandlordBookings from './pages/LandlordBookings'
 import AddProperty from './pages/AddProperty'
 import LandlordMessages from './pages/LandlordMessages'
 import LandlordSettings from './pages/LandlordSettings'
@@ -27,6 +28,7 @@ import { AuthProvider } from './context/AuthContext'
 import { PropertyProvider } from './context/PropertyContext'
 import { AdminProvider } from './context/AdminContext'
 import { StudentProvider } from './context/StudentContext'
+import { BookingProvider } from './context/BookingContext'
 
 function App() {
   return (
@@ -34,7 +36,8 @@ function App() {
       <PropertyProvider>
         <AdminProvider>
           <StudentProvider>
-            <Router>
+            <BookingProvider>
+              <Router>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -62,6 +65,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <StudentBrowse />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/bookings"
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentBookings />
                     </ProtectedRoute>
                   }
                 />
@@ -112,6 +123,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['landlord']}>
                       <AddProperty />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/landlord/bookings"
+                  element={
+                    <ProtectedRoute allowedRoles={['landlord']}>
+                      <LandlordBookings />
                     </ProtectedRoute>
                   }
                 />
@@ -184,7 +203,8 @@ function App() {
                   }
                 />
               </Routes>
-            </Router>
+              </Router>
+            </BookingProvider>
           </StudentProvider>
         </AdminProvider>
       </PropertyProvider>

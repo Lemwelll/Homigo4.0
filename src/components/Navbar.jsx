@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Home, Menu, X, User, LogOut, Settings } from 'lucide-react'
+import { Menu, X, LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const Navbar = ({ isLoggedIn = false, userType = null }) => {
@@ -21,9 +21,12 @@ const Navbar = ({ isLoggedIn = false, userType = null }) => {
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <Home className="w-8 h-8 text-primary-500" />
-            <span className="text-2xl font-bold text-primary-600">Homigo</span>
+          <Link to="/" className="flex items-center space-x-3">
+            <img 
+              src="/assets/Homigo.png" 
+              alt="Homigo Logo" 
+              className="h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-md transition-transform duration-200 hover:scale-105" 
+            />
           </Link>
 
           {/* Desktop Navigation */}
