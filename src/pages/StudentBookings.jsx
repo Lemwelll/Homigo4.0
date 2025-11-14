@@ -2,13 +2,31 @@ import { useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useBooking } from '../context/BookingContext'
 import BookingCard from '../components/BookingCard'
+import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 import { Calendar, Filter, Clock, CheckCircle, XCircle, Home } from 'lucide-react'
 
 const StudentBookings = () => {
-  const { getStudentBookings } = useBooking()
+  const { getStudentBookings, refundEscrowPayment } = useBooking()
   const [filter, setFilter] = useState('All')
+  const [toast, setToast] = useState(null)
+  const [confirmModal, setConfirmModal] = useState(null)
   
   const bookings = getStudentBookings()
+
+  const handleCancel = (bookingId) => {
+    setConfirmModal({
+      title: 'Cancel Booking & Request Refund',
+      message: 'This will cancel your booking and refund the escrow payment. Continue?',
+      confirmText: 'Cancel & Refund',
+      confirmColor: 'red',
+      onConfirm: () => {
+        refundEscrowPayment(bookingId)
+        setToast({ message: 'Booking cancelled. Payment will be refunded.', type: 'info' })
+        setConfirmModal(null)
+      }
+    })
+  }
   
   const filteredBookings = filter === 'All' 
     ? bookings 
@@ -106,10 +124,29 @@ const StudentBookings = () => {
               key={booking.id}
               booking={booking}
               userRole="student"
+              onCancel={handleCancel}
             />
           ))
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setConfirmModal(null)}
+          {...confirmModal}
+        />
+      )}
       </div>
     </DashboardLayout>
   )

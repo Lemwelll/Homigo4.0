@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, Heart, MessageSquare, Settings, PlusCircle, List, Calendar } from 'lucide-react'
+import { Home, Search, Heart, MessageSquare, Settings, PlusCircle, List, Calendar, Wallet, Clock } from 'lucide-react'
 
 const Sidebar = ({ userType, onNavigate, isExpanded = true }) => {
   const location = useLocation()
@@ -7,7 +7,9 @@ const Sidebar = ({ userType, onNavigate, isExpanded = true }) => {
   const studentLinks = [
     { to: '/student/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/student/browse', icon: Search, label: 'Browse Properties' },
+    { to: '/student/reservations', icon: Clock, label: 'Reservations' },
     { to: '/student/bookings', icon: Calendar, label: 'My Bookings' },
+    { to: '/student/escrow', icon: Wallet, label: 'Escrow Payments' },
     { to: '/student/favorites', icon: Heart, label: 'Saved Listings' },
     { to: '/student/messages', icon: MessageSquare, label: 'Messages' },
     { to: '/student/settings', icon: Settings, label: 'Settings' },
@@ -17,7 +19,9 @@ const Sidebar = ({ userType, onNavigate, isExpanded = true }) => {
     { to: '/landlord/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/landlord/properties', icon: List, label: 'My Properties' },
     { to: '/landlord/add-property', icon: PlusCircle, label: 'Add Property' },
+    { to: '/landlord/reservations', icon: Clock, label: 'Reservations' },
     { to: '/landlord/bookings', icon: Calendar, label: 'Bookings' },
+    { to: '/landlord/escrow', icon: Wallet, label: 'Escrow Payments' },
     { to: '/landlord/messages', icon: MessageSquare, label: 'Messages' },
     { to: '/landlord/settings', icon: Settings, label: 'Settings' },
   ]

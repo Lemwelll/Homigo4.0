@@ -7,16 +7,21 @@ import LandlordLogin from './pages/LandlordLogin'
 import LandlordRegister from './pages/LandlordRegister'
 import StudentDashboard from './pages/StudentDashboard'
 import StudentBrowse from './pages/StudentBrowse'
+import StudentReservations from './pages/StudentReservations'
 import StudentBookings from './pages/StudentBookings'
 import StudentFavorites from './pages/StudentFavorites'
 import StudentMessages from './pages/StudentMessages'
 import StudentSettings from './pages/StudentSettings'
+import StudentEscrow from './pages/StudentEscrow'
+import SecurePayment from './pages/SecurePayment'
 import LandlordDashboard from './pages/LandlordDashboard'
 import LandlordProperties from './pages/LandlordProperties'
+import LandlordReservations from './pages/LandlordReservations'
 import LandlordBookings from './pages/LandlordBookings'
 import AddProperty from './pages/AddProperty'
 import LandlordMessages from './pages/LandlordMessages'
 import LandlordSettings from './pages/LandlordSettings'
+import LandlordEscrow from './pages/LandlordEscrow'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminVerifications from './pages/AdminVerifications'
 import AdminLandlords from './pages/AdminLandlords'
@@ -28,7 +33,9 @@ import { AuthProvider } from './context/AuthContext'
 import { PropertyProvider } from './context/PropertyContext'
 import { AdminProvider } from './context/AdminContext'
 import { StudentProvider } from './context/StudentContext'
+import { ReservationProvider } from './context/ReservationContext'
 import { BookingProvider } from './context/BookingContext'
+import { EscrowProvider } from './context/EscrowContext'
 
 function App() {
   return (
@@ -36,9 +43,11 @@ function App() {
       <PropertyProvider>
         <AdminProvider>
           <StudentProvider>
-            <BookingProvider>
-              <Router>
-              <Routes>
+            <ReservationProvider>
+              <BookingProvider>
+                <EscrowProvider>
+                  <Router>
+                    <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<UnifiedLogin />} />
@@ -65,6 +74,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <StudentBrowse />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/reservations"
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentReservations />
                     </ProtectedRoute>
                   }
                 />
@@ -100,6 +117,22 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/student/escrow"
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentEscrow />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/secure-payment"
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <SecurePayment />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Landlord Routes - Protected */}
                 <Route
@@ -127,6 +160,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/landlord/reservations"
+                  element={
+                    <ProtectedRoute allowedRoles={['landlord']}>
+                      <LandlordReservations />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/landlord/bookings"
                   element={
                     <ProtectedRoute allowedRoles={['landlord']}>
@@ -147,6 +188,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['landlord']}>
                       <LandlordSettings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/landlord/escrow"
+                  element={
+                    <ProtectedRoute allowedRoles={['landlord']}>
+                      <LandlordEscrow />
                     </ProtectedRoute>
                   }
                 />
@@ -202,9 +251,11 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-              </Routes>
-              </Router>
-            </BookingProvider>
+                    </Routes>
+                  </Router>
+                </EscrowProvider>
+              </BookingProvider>
+            </ReservationProvider>
           </StudentProvider>
         </AdminProvider>
       </PropertyProvider>

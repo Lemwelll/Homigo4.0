@@ -2,21 +2,23 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useStudent } from '../context/StudentContext'
+import { useReservation } from '../context/ReservationContext'
 import { useBooking } from '../context/BookingContext'
 import Toast from '../components/Toast'
-import ConfirmModal from '../components/ConfirmModal'
-import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft } from 'lucide-react'
+import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock } from 'lucide-react'
 
 const PropertyDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { properties, toggleFavorite, isFavorite } = useStudent()
-  const { createBooking, isPropertyBooked } = useBooking()
+  const { createReservation, isPropertyReserved } = useReservation()
+  const { isPropertyBooked } = useBooking()
   const [toast, setToast] = useState(null)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  
+  const [showReserveModal, setShowReserveModal] = useState(false)
+  const [reservationMessage, setReservationMessage] = useState('')
+
   const property = properties.find(p => p.id === parseInt(id))
-  
+
   if (!property) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -34,28 +36,44 @@ const PropertyDetails = () => {
     .filter(p => p.id !== property.id && p.city === property.city)
     .slice(0, 3)
 
+  const alreadyReserved = isPropertyReserved(property.id)
   const alreadyBooked = isPropertyBooked(property.id)
+
+  const handleReserveProperty = () => {
+    if (alreadyReserved) {
+      setToast({ message: 'You already have a reservation for this property!', type: 'info' })
+      return
+    }
+    setShowReserveModal(true)
+  }
+
+  const handleConfirmReservation = () => {
+    createReservation(property, reservationMessage)
+    setShowReserveModal(false)
+    setReservationMessage('')
+    setToast({
+      message: 'Property reserved! You have 48 hours to complete payment.',
+      type: 'success'
+    })
+
+    setTimeout(() => {
+      navigate('/student/reservations')
+    }, 2000)
+  }
 
   const handleBookNow = () => {
     if (alreadyBooked) {
       setToast({ message: 'You already have a booking for this property!', type: 'info' })
       return
     }
-    setShowConfirmModal(true)
-  }
-
-  const confirmBooking = () => {
-    createBooking(property)
-    setToast({ message: 'Booking request sent successfully!', type: 'success' })
-    setTimeout(() => {
-      navigate('/student/bookings')
-    }, 2000)
+    // Navigate to secure payment page
+    navigate('/student/secure-payment', { state: { property } })
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar isLoggedIn={true} userType="student" />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         <button
           onClick={() => navigate(-1)}
@@ -80,11 +98,10 @@ const PropertyDetails = () => {
           )}
           <button
             onClick={() => toggleFavorite(property.id)}
-            className={`absolute top-4 left-4 p-3 rounded-full transition-all duration-300 shadow-lg ${
-              isFavorite(property.id)
-                ? 'bg-red-500 text-white'
-                : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
-            }`}
+            className={`absolute top-4 left-4 p-3 rounded-full transition-all duration-300 shadow-lg ${isFavorite(property.id)
+              ? 'bg-red-500 text-white'
+              : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+              }`}
           >
             <Heart className={`w-6 h-6 ${isFavorite(property.id) ? 'fill-current' : ''}`} />
           </button>
@@ -148,16 +165,26 @@ const PropertyDetails = () => {
                 <p className="text-gray-600">per month</p>
               </div>
 
-              <button 
+              <button
+                onClick={handleReserveProperty}
+                disabled={alreadyReserved}
+                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${alreadyReserved
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                  }`}
+              >
+                <Clock className="w-5 h-5" />
+                {alreadyReserved ? 'Already Reserved' : 'Reserve Property (48h Hold)'}
+              </button>
+              <button
                 onClick={handleBookNow}
                 disabled={alreadyBooked}
-                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                  alreadyBooked
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'btn-primary'
-                }`}
+                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${alreadyBooked
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'btn-primary'
+                  }`}
               >
-                {alreadyBooked ? 'Already Requested' : 'Book Now'}
+                {alreadyBooked ? 'Already Booked' : 'Book Now (Instant)'}
               </button>
               <button
                 onClick={() => navigate('/student/messages')}
@@ -231,6 +258,62 @@ const PropertyDetails = () => {
         )}
       </div>
 
+      {/* Reserve Property Modal */}
+      {showReserveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Reserve Property</h2>
+            <div className="mb-4">
+              <img
+                src={property.image}
+                alt={property.title}
+                className="w-full h-40 object-cover rounded-lg mb-3"
+              />
+              <h3 className="font-bold text-gray-900">{property.title}</h3>
+              <p className="text-2xl font-bold text-primary-600">₱{property.price.toLocaleString()}/month</p>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-yellow-600" />
+                <span className="font-semibold text-yellow-900">48-Hour Reservation</span>
+              </div>
+              <p className="text-sm text-yellow-700">
+                This property will be held for you for 48 hours. Complete payment within this time to secure your booking.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message to Landlord (Optional)
+              </label>
+              <textarea
+                value={reservationMessage}
+                onChange={(e) => setReservationMessage(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                rows="3"
+                placeholder="Introduce yourself and share why you're interested in this property..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReserveModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReservation}
+                className="flex-1 px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-semibold"
+              >
+                Confirm Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toast && (
         <Toast
@@ -239,17 +322,6 @@ const PropertyDetails = () => {
           onClose={() => setToast(null)}
         />
       )}
-
-      {/* Confirm Booking Modal */}
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={confirmBooking}
-        title="Confirm Booking"
-        message={`Are you sure you want to book "${property.title}" for ₱${property.price.toLocaleString()}/month?`}
-        confirmText="Confirm Booking"
-        confirmColor="blue"
-      />
     </div>
   )
 }

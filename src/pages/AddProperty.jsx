@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useNavigate } from 'react-router-dom'
 import { useProperties } from '../context/PropertyContext'
-import { Upload, CheckCircle, Home, X } from 'lucide-react'
+import { Upload, CheckCircle, Home, X, Settings, ToggleLeft, ToggleRight, DollarSign } from 'lucide-react'
 
 const AddProperty = () => {
   const navigate = useNavigate()
@@ -22,7 +22,12 @@ const AddProperty = () => {
     description: '',
     address: '',
     amenities: [],
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'
+    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
+    paymentRules: {
+      allowReservations: true,
+      enableDownpayment: false,
+      downpaymentAmount: 3000
+    }
   })
 
   // Load saved draft from localStorage on mount
@@ -336,6 +341,117 @@ const AddProperty = () => {
                   <span className="font-medium text-gray-700">{amenity}</span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* Payment Settings */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-6">
+              <Settings className="w-6 h-6 text-gray-600" />
+              <h2 className="text-xl font-bold text-gray-800">Payment Settings</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Allow Reservations */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">Allow Reservations</h4>
+                  <p className="text-sm text-gray-600">
+                    Students can reserve this property with a 48-hour hold
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    paymentRules: {
+                      ...formData.paymentRules,
+                      allowReservations: !formData.paymentRules.allowReservations
+                    }
+                  })}
+                  className={`ml-4 p-2 rounded-lg transition-colors ${
+                    formData.paymentRules.allowReservations
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {formData.paymentRules.allowReservations ? (
+                    <ToggleRight className="w-8 h-8" />
+                  ) : (
+                    <ToggleLeft className="w-8 h-8" />
+                  )}
+                </button>
+              </div>
+
+              {/* Enable Downpayment */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">Enable Downpayment Option</h4>
+                  <p className="text-sm text-gray-600">
+                    Allow students to pay in installments (downpayment + remaining)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    paymentRules: {
+                      ...formData.paymentRules,
+                      enableDownpayment: !formData.paymentRules.enableDownpayment
+                    }
+                  })}
+                  className={`ml-4 p-2 rounded-lg transition-colors ${
+                    formData.paymentRules.enableDownpayment
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {formData.paymentRules.enableDownpayment ? (
+                    <ToggleRight className="w-8 h-8" />
+                  ) : (
+                    <ToggleLeft className="w-8 h-8" />
+                  )}
+                </button>
+              </div>
+
+              {/* Downpayment Amount */}
+              {formData.paymentRules.enableDownpayment && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <label className="block mb-2">
+                    <span className="text-sm font-semibold text-blue-900">Downpayment Amount</span>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Set the initial payment amount students must pay
+                    </p>
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="number"
+                      value={formData.paymentRules.downpaymentAmount}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        paymentRules: {
+                          ...formData.paymentRules,
+                          downpaymentAmount: parseInt(e.target.value) || 0
+                        }
+                      })}
+                      className="w-full pl-10 pr-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      placeholder="3000"
+                      min="0"
+                    />
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    ₱{formData.paymentRules.downpaymentAmount.toLocaleString()} PHP
+                  </p>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  💡 <strong>Tip:</strong> Offering downpayment options can attract more students who prefer flexible payment terms.
+                </p>
+              </div>
             </div>
           </div>
 

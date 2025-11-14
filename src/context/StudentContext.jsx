@@ -35,7 +35,12 @@ export const StudentProvider = ({ children }) => {
       landlordPhone: '+63 912 345 6789',
       landlordEmail: 'maria@email.com',
       amenities: ['WiFi', 'Air Conditioning', 'Security', 'Water', 'Electricity'],
-      address: '123 University Avenue, Quezon City'
+      address: '123 University Avenue, Quezon City',
+      paymentRules: {
+        allowReservations: true,
+        enableDownpayment: true,
+        downpaymentAmount: 3000
+      }
     },
     {
       id: 2,
@@ -53,7 +58,12 @@ export const StudentProvider = ({ children }) => {
       landlordPhone: '+63 923 456 7890',
       landlordEmail: 'juan@email.com',
       amenities: ['WiFi', 'Water', 'Electricity'],
-      address: '456 Taft Avenue, Manila'
+      address: '456 Taft Avenue, Manila',
+      paymentRules: {
+        allowReservations: true,
+        enableDownpayment: false,
+        downpaymentAmount: 0
+      }
     },
     {
       id: 3,
@@ -71,7 +81,12 @@ export const StudentProvider = ({ children }) => {
       landlordPhone: '+63 934 567 8901',
       landlordEmail: 'ana@email.com',
       amenities: ['WiFi', 'Air Conditioning', 'Parking', 'Security', 'Water', 'Electricity'],
-      address: '789 Ayala Avenue, Makati'
+      address: '789 Ayala Avenue, Makati',
+      paymentRules: {
+        allowReservations: true,
+        enableDownpayment: true,
+        downpaymentAmount: 5000
+      }
     },
     {
       id: 4,

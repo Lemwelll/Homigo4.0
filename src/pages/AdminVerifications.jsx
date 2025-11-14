@@ -2,13 +2,15 @@ import React, { useState } from 'react'
 import AdminLayout from '../components/AdminLayout'
 import StatusBadge from '../components/StatusBadge'
 import { useAdmin } from '../context/AdminContext'
-import { CheckCircle, XCircle, Eye, Search, Filter } from 'lucide-react'
+import { CheckCircle, XCircle, Eye, Search, Filter, X, MapPin, Home, User } from 'lucide-react'
 
 const AdminVerifications = () => {
   const { properties, approveProperty, rejectProperty } = useAdmin()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [showSuccess, setShowSuccess] = useState(null)
+  const [selectedProperty, setSelectedProperty] = useState(null)
+  const [showModal, setShowModal] = useState(false)
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -17,15 +19,22 @@ const AdminVerifications = () => {
     return matchesSearch && matchesFilter
   })
 
+  const handleViewDetails = (property) => {
+    setSelectedProperty(property)
+    setShowModal(true)
+  }
+
   const handleApprove = (propertyId, propertyTitle) => {
     approveProperty(propertyId)
     setShowSuccess({ type: 'approved', title: propertyTitle })
+    setShowModal(false)
     setTimeout(() => setShowSuccess(null), 3000)
   }
 
   const handleReject = (propertyId, propertyTitle) => {
     rejectProperty(propertyId)
     setShowSuccess({ type: 'rejected', title: propertyTitle })
+    setShowModal(false)
     setTimeout(() => setShowSuccess(null), 3000)
   }
 
@@ -155,32 +164,14 @@ const AdminVerifications = () => {
                       <StatusBadge status={property.status} />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {property.status === 'Pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(property.id, property.title)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Approve"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleReject(property.id, property.title)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Reject"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => handleViewDetails(property)}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>View</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -195,6 +186,102 @@ const AdminVerifications = () => {
             </div>
           )}
         </div>
+
+        {/* Property Details Modal */}
+        {showModal && selectedProperty && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Property Details</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Property Image */}
+                <img
+                  src={selectedProperty.image}
+                  alt={selectedProperty.title}
+                  className="w-full h-64 object-cover rounded-xl"
+                />
+
+                {/* Property Info */}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedProperty.title}</h3>
+                  <div className="flex items-center gap-4 text-gray-600 mb-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      <span>{selectedProperty.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Home className="w-5 h-5" />
+                      <span>{selectedProperty.bedrooms} Bed • {selectedProperty.bathrooms} Bath</span>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-primary-600 mb-4">
+                    ₱{selectedProperty.price.toLocaleString()}/month
+                  </p>
+                </div>
+
+                {/* Landlord Info */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="w-5 h-5 text-gray-600" />
+                    <h4 className="font-bold text-gray-900">Landlord Information</h4>
+                  </div>
+                  <p className="text-gray-700"><strong>Name:</strong> {selectedProperty.landlordName}</p>
+                  <p className="text-gray-600 text-sm">Submitted: {selectedProperty.submittedDate}</p>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-2">Description</h4>
+                  <p className="text-gray-600">{selectedProperty.description || 'No description provided.'}</p>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-2">Current Status</h4>
+                  <StatusBadge status={selectedProperty.status} />
+                </div>
+
+                {/* Action Buttons */}
+                {selectedProperty.status === 'Pending' && (
+                  <div className="flex gap-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => handleApprove(selectedProperty.id, selectedProperty.title)}
+                      className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      Approve Property
+                    </button>
+                    <button
+                      onClick={() => handleReject(selectedProperty.id, selectedProperty.title)}
+                      className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                    >
+                      <XCircle className="w-5 h-5" />
+                      Reject Property
+                    </button>
+                  </div>
+                )}
+
+                {selectedProperty.status !== 'Pending' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-700">
+                      This property has already been {selectedProperty.status.toLowerCase()}.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

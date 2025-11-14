@@ -20,7 +20,16 @@ export const AdminProvider = ({ children }) => {
       totalProperties: 2,
       status: 'Verified',
       joinDate: '2025-01-05',
-      documentUrl: '#'
+      documentUrl: '#',
+      address: '123 Main Street, Quezon City, Metro Manila',
+      businessName: 'Santos Property Management',
+      businessAddress: '456 Business Ave, Makati City',
+      tinNumber: '123-456-789-000',
+      validId: 'Driver\'s License - A12-34-567890',
+      bankAccount: 'BDO - 1234567890',
+      emergencyContact: 'Juan Santos - +63 917 111 2222',
+      verifiedDate: '2025-01-06',
+      verifiedBy: 'Admin User'
     },
     {
       id: 2,
@@ -30,7 +39,16 @@ export const AdminProvider = ({ children }) => {
       totalProperties: 1,
       status: 'Pending',
       joinDate: '2025-01-10',
-      documentUrl: '#'
+      documentUrl: '#',
+      address: '789 Taft Avenue, Manila',
+      businessName: 'Reyes Rentals',
+      businessAddress: '321 Commerce St, Manila',
+      tinNumber: '987-654-321-000',
+      validId: 'Passport - P1234567',
+      bankAccount: 'BPI - 9876543210',
+      emergencyContact: 'Maria Reyes - +63 918 222 3333',
+      verifiedDate: null,
+      verifiedBy: null
     },
     {
       id: 3,
@@ -40,7 +58,16 @@ export const AdminProvider = ({ children }) => {
       totalProperties: 0,
       status: 'Pending',
       joinDate: '2025-01-12',
-      documentUrl: '#'
+      documentUrl: '#',
+      address: '555 España Blvd, Sampaloc, Manila',
+      businessName: 'Cruz Properties',
+      businessAddress: '777 University Ave, Manila',
+      tinNumber: '111-222-333-444',
+      validId: 'UMID - 0001-2345678-9',
+      bankAccount: 'Metrobank - 1122334455',
+      emergencyContact: 'Ana Cruz - +63 919 333 4444',
+      verifiedDate: null,
+      verifiedBy: null
     }
   ])
 
