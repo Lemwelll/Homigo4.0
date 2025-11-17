@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, Phone, Upload, Home } from 'lucide-react'
+import { Mail, Lock, User, Phone, Upload, ArrowLeft } from 'lucide-react'
 
 const StudentRegister = () => {
   const navigate = useNavigate()
@@ -21,6 +21,14 @@ const StudentRegister = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4">
+      {/* Back Button - Fixed Position */}
+      <Link 
+        to="/" 
+        className="fixed top-4 left-4 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:bg-gray-50 group z-10"
+      >
+        <ArrowLeft className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-colors" />
+      </Link>
+
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">

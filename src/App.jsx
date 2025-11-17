@@ -1,10 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import UnifiedLogin from './pages/UnifiedLogin'
-import StudentLogin from './pages/StudentLogin'
 import StudentRegister from './pages/StudentRegister'
-import LandlordLogin from './pages/LandlordLogin'
 import LandlordRegister from './pages/LandlordRegister'
+import PublicListings from './pages/PublicListings'
 import StudentDashboard from './pages/StudentDashboard'
 import StudentBrowse from './pages/StudentBrowse'
 import StudentReservations from './pages/StudentReservations'
@@ -54,6 +53,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<UnifiedLogin />} />
+                <Route path="/listings" element={<PublicListings />} />
                 
                 {/* Legacy Login Routes (redirect to unified) */}
                 <Route path="/student/login" element={<Navigate to="/login" replace />} />

@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Mail, Lock, Home, User, Building2, Shield } from 'lucide-react'
+import { Mail, Lock, ArrowLeft, User, Building2, Shield } from 'lucide-react'
 
 const UnifiedLogin = () => {
   const navigate = useNavigate()
@@ -43,13 +43,21 @@ const UnifiedLogin = () => {
     const result = login({ ...formData, role: selectedRole })
 
     if (result.success) {
-      // Navigate to appropriate dashboard
-      const dashboardRoutes = {
-        student: '/student/dashboard',
-        landlord: '/landlord/dashboard',
-        admin: '/admin/dashboard'
+      // Check if there's a redirect URL stored
+      const redirectUrl = localStorage.getItem('redirectAfterLogin')
+      
+      if (redirectUrl) {
+        localStorage.removeItem('redirectAfterLogin')
+        navigate(redirectUrl)
+      } else {
+        // Navigate to appropriate dashboard
+        const dashboardRoutes = {
+          student: '/student/dashboard',
+          landlord: '/landlord/dashboard',
+          admin: '/admin/dashboard'
+        }
+        navigate(dashboardRoutes[selectedRole])
       }
-      navigate(dashboardRoutes[selectedRole])
     } else {
       setError(result.error || 'Login failed')
     }
@@ -59,6 +67,14 @@ const UnifiedLogin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center px-4 py-12">
+      {/* Back Button - Fixed Position */}
+      <Link 
+        to="/" 
+        className="fixed top-4 left-4 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:bg-gray-50 group z-10"
+      >
+        <ArrowLeft className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-colors" />
+      </Link>
+
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">

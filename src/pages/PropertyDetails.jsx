@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useStudent } from '../context/StudentContext'
 import { useReservation } from '../context/ReservationContext'
 import { useBooking } from '../context/BookingContext'
+import { useAuth } from '../context/AuthContext'
 import Toast from '../components/Toast'
 import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock } from 'lucide-react'
+import { dummyProperties } from '../data/dummyProperties'
 
 const PropertyDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { properties, toggleFavorite, isFavorite } = useStudent()
   const { createReservation, isPropertyReserved } = useReservation()
   const { isPropertyBooked } = useBooking()
@@ -17,7 +20,17 @@ const PropertyDetails = () => {
   const [showReserveModal, setShowReserveModal] = useState(false)
   const [reservationMessage, setReservationMessage] = useState('')
 
-  const property = properties.find(p => p.id === parseInt(id))
+  // Check if user is logged in, if not redirect to login
+  useEffect(() => {
+    if (!user) {
+      localStorage.setItem('redirectAfterLogin', `/property/${id}`);
+      navigate('/login');
+    }
+  }, [user, navigate, id]);
+
+  // Try to find property in dummy data first, then in context
+  const property = dummyProperties.find(p => p.id === parseInt(id)) || 
+                   properties.find(p => p.id === parseInt(id))
 
   if (!property) {
     return (

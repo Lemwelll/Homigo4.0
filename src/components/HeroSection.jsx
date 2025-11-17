@@ -1,6 +1,20 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Search } from 'lucide-react'
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/listings?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/listings');
+    }
+  };
+
   return (
     <div className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 text-white overflow-hidden">
       <div className="absolute inset-0 bg-black opacity-10"></div>
@@ -29,17 +43,22 @@ const HeroSection = () => {
 
           {/* Search Bar */}
           <div className="w-full max-w-2xl mx-auto">
-            <div className="bg-white rounded-full shadow-2xl p-2 flex items-center hover:shadow-3xl transition-shadow duration-300">
+            <form onSubmit={handleSearch} className="bg-white rounded-full shadow-2xl p-2 flex items-center hover:shadow-3xl transition-shadow duration-300">
               <Search className="w-5 h-5 md:w-6 md:h-6 text-gray-400 ml-3 md:ml-4 flex-shrink-0" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by city, university, or neighborhood..."
                 className="flex-1 px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-700 outline-none rounded-full placeholder:text-gray-400"
               />
-              <button className="bg-primary-500 hover:bg-primary-600 text-white px-4 md:px-8 py-2 md:py-3 rounded-full font-semibold transition-all duration-300 text-sm md:text-base whitespace-nowrap hover:scale-105 transform">
+              <button 
+                type="submit"
+                className="bg-primary-500 hover:bg-primary-600 text-white px-4 md:px-8 py-2 md:py-3 rounded-full font-semibold transition-all duration-300 text-sm md:text-base whitespace-nowrap hover:scale-105 transform"
+              >
                 Search
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
