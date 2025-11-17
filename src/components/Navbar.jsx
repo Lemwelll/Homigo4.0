@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Menu, X, LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from './NotificationBell'
 
 const Navbar = ({ isLoggedIn = false, userType = null }) => {
   const { user, logout } = useAuth()
@@ -41,18 +42,23 @@ const Navbar = ({ isLoggedIn = false, userType = null }) => {
                 </Link>
               </>
             ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-primary-500 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-primary-600 font-bold">
-                      {user?.name?.charAt(0) || 'U'}
-                    </span>
-                  </div>
-                  <span>{user?.name || 'User'}</span>
-                </button>
+              <div className="flex items-center space-x-4">
+                {/* Notification Bell */}
+                <NotificationBell />
+                
+                {/* User Profile */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-500 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                      <span className="text-primary-600 font-bold">
+                        {user?.name?.charAt(0) || 'U'}
+                      </span>
+                    </div>
+                    <span>{user?.name || 'User'}</span>
+                  </button>
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2">
                     <Link
@@ -72,6 +78,7 @@ const Navbar = ({ isLoggedIn = false, userType = null }) => {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             )}
           </div>

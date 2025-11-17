@@ -14,6 +14,7 @@ import StudentMessages from './pages/StudentMessages'
 import StudentSettings from './pages/StudentSettings'
 import StudentEscrow from './pages/StudentEscrow'
 import SecurePayment from './pages/SecurePayment'
+import Notifications from './pages/Notifications'
 import LandlordDashboard from './pages/LandlordDashboard'
 import LandlordProperties from './pages/LandlordProperties'
 import LandlordReservations from './pages/LandlordReservations'
@@ -36,6 +37,7 @@ import { StudentProvider } from './context/StudentContext'
 import { ReservationProvider } from './context/ReservationContext'
 import { BookingProvider } from './context/BookingContext'
 import { EscrowProvider } from './context/EscrowContext'
+import { NotificationProvider } from './context/NotificationContext'
 
 function App() {
   return (
@@ -46,8 +48,9 @@ function App() {
             <ReservationProvider>
               <BookingProvider>
                 <EscrowProvider>
-                  <Router>
-                    <Routes>
+                  <NotificationProvider>
+                    <Router>
+                      <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<UnifiedLogin />} />
@@ -130,6 +133,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <SecurePayment />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <Notifications />
                     </ProtectedRoute>
                   }
                 />
@@ -251,8 +262,9 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                    </Routes>
-                  </Router>
+                      </Routes>
+                    </Router>
+                  </NotificationProvider>
                 </EscrowProvider>
               </BookingProvider>
             </ReservationProvider>
