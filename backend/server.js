@@ -119,8 +119,8 @@ const startServer = async () => {
             process.exit(1);
         }
 
-        // Start listening
-        app.listen(PORT, () => {
+        // Start listening on 0.0.0.0 for Render compatibility
+        app.listen(PORT, '0.0.0.0', () => {
             console.log('');
             console.log('╔════════════════════════════════════════╗');
             console.log('║     HOMIGO BACKEND API SERVER         ║');
@@ -128,7 +128,7 @@ const startServer = async () => {
             console.log('');
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🌐 API URL: http://localhost:${PORT}`);
+            console.log(`🌐 API URL: http://0.0.0.0:${PORT}`);
             console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
             console.log('');
             console.log('Available endpoints:');
