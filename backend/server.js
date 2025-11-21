@@ -111,15 +111,8 @@ app.use(errorHandler);
 
 const startServer = async () => {
     try {
-        // Test database connection
-        const isConnected = await testConnection();
-
-        if (!isConnected) {
-            console.error('❌ Failed to connect to database');
-            process.exit(1);
-        }
-
-        // Start listening on 0.0.0.0 for Render compatibility
+        // Start listening on 0.0.0.0 for Render compatibility FIRST
+        // This ensures Render detects the port binding
         app.listen(PORT, '0.0.0.0', () => {
             console.log('');
             console.log('╔════════════════════════════════════════╗');
@@ -145,6 +138,13 @@ const startServer = async () => {
             console.log(`  GET  /properties/admin/all         - Get all properties (Admin)`);
             console.log(`  POST /properties/admin/verify/:id  - Verify property (Admin)`);
             console.log('');
+            
+            // Test database connection AFTER server starts
+            testConnection().then(isConnected => {
+                if (!isConnected) {
+                    console.warn('⚠️  Database connection failed, but server is running');
+                }
+            });
         });
 
     } catch (error) {
