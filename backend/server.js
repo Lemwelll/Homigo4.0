@@ -26,6 +26,7 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0'; // Bind to all network interfaces for Render
 
 // ============================================
 // MIDDLEWARE
@@ -113,16 +114,17 @@ const startServer = async () => {
     try {
         // Start listening on 0.0.0.0 for Render compatibility FIRST
         // This ensures Render detects the port binding
-        app.listen(PORT, '0.0.0.0', () => {
+        const server = app.listen(PORT, HOST, () => {
             console.log('');
             console.log('╔════════════════════════════════════════╗');
             console.log('║     HOMIGO BACKEND API SERVER         ║');
             console.log('╚════════════════════════════════════════╝');
             console.log('');
-            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`🚀 Server running on ${HOST}:${PORT}`);
             console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🌐 API URL: http://0.0.0.0:${PORT}`);
+            console.log(`🌐 API URL: http://${HOST}:${PORT}`);
             console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
+            console.log(`✅ Server successfully bound to ${HOST}:${PORT}`);
             console.log('');
             console.log('Available endpoints:');
             console.log(`  GET  /health                       - Health check`);
@@ -155,6 +157,16 @@ const startServer = async () => {
 
 // Start the server
 startServer();
+
+// Handle server errors
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    process.exit(0);
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
