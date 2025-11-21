@@ -56,10 +56,10 @@ const AdminLayout = ({ children }) => {
 
             {/* Logo + App Name */}
             <div className="flex items-center space-x-3">
-              <img 
-                src="/assets/Homigo.png" 
-                alt="Homigo Logo" 
-                className="h-12 md:h-16 lg:h-20 w-auto object-contain drop-shadow-md transition-transform duration-200 hover:scale-105" 
+              <img
+                src="/assets/Homigo.png"
+                alt="Homigo Logo"
+                className="h-12 md:h-16 lg:h-20 w-auto object-contain drop-shadow-md transition-transform duration-200 hover:scale-105"
               />
             </div>
           </div>

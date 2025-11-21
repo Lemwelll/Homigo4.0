@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
+
+// Backend API URL
+const API_URL = 'http://localhost:5000/auth'
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -18,75 +20,144 @@ export const AuthProvider = ({ children }) => {
   // Check for existing session on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('homigo_user')
-    if (storedUser) {
+    const storedToken = localStorage.getItem('homigo_token')
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser))
     }
     setLoading(false)
   }, [])
 
-  const login = (credentials) => {
-    // Mock authentication - in real app, this would call an API
-    const { email, password, role } = credentials
+  const login = async (credentials) => {
+    try {
+      const { email, password } = credentials
 
-    // Mock user data based on role
-    const userData = {
-      student: {
-        id: 1,
-        name: 'Lemuel',
-        email: 'lemuel@university.edu',
-        role: 'student',
-        studentId: '2021-12345',
-        university: 'University of the Philippines'
-      },
-      landlord: {
-        id: 2,
-        name: 'Maria Santos',
-        email: 'maria@email.com',
-        role: 'landlord',
-        phone: '+63 912 345 6789',
-        businessName: 'Santos Properties'
-      },
-      admin: {
-        id: 3,
-        name: 'Admin User',
-        email: 'admin@homigo.com',
-        role: 'admin'
+      // Call backend API
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Map backend user data to frontend format
+        const authenticatedUser = {
+          id: data.data.user.id,
+          name: data.data.user.full_name,
+          email: data.data.user.email,
+          role: data.data.user.role,
+          phone: data.data.user.phone,
+          is_verified: data.data.user.is_verified || false
+        }
+
+        setUser(authenticatedUser)
+        localStorage.setItem('homigo_user', JSON.stringify(authenticatedUser))
+        localStorage.setItem('homigo_token', data.data.token)
+        
+        return { success: true, user: authenticatedUser }
+      } else {
+        return { success: false, error: data.message || 'Login failed' }
       }
+    } catch (error) {
+      console.error('Login error:', error)
+      return { success: false, error: 'Network error. Please try again.' }
     }
-
-    const authenticatedUser = userData[role]
-    
-    if (authenticatedUser) {
-      setUser(authenticatedUser)
-      localStorage.setItem('homigo_user', JSON.stringify(authenticatedUser))
-      return { success: true, user: authenticatedUser }
-    }
-
-    return { success: false, error: 'Invalid credentials' }
   }
 
-  const register = (userData) => {
-    // Mock registration - in real app, this would call an API
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      role: userData.role || 'student'
-    }
+  const register = async (userData) => {
+    try {
+      const { fullName, email, password, phone, role, studentIdNumber, university, businessName } = userData
 
-    setUser(newUser)
-    localStorage.setItem('homigo_user', JSON.stringify(newUser))
-    return { success: true, user: newUser }
+      // Call backend API
+      const response = await fetch(`${API_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          phone,
+          role: role || 'student',
+          studentIdNumber,
+          university,
+          businessName
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Map backend user data to frontend format
+        const newUser = {
+          id: data.data.user.id,
+          name: data.data.user.full_name,
+          email: data.data.user.email,
+          role: data.data.user.role,
+          phone: data.data.user.phone
+        }
+
+        setUser(newUser)
+        localStorage.setItem('homigo_user', JSON.stringify(newUser))
+        localStorage.setItem('homigo_token', data.data.token)
+        
+        return { success: true, user: newUser }
+      } else {
+        return { success: false, error: data.message || 'Registration failed' }
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      return { success: false, error: 'Network error. Please try again.' }
+    }
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem('homigo_user')
+    localStorage.removeItem('homigo_token')
   }
 
   const updateProfile = (updates) => {
     const updatedUser = { ...user, ...updates }
     setUser(updatedUser)
     localStorage.setItem('homigo_user', JSON.stringify(updatedUser))
+  }
+
+  const refreshProfile = async () => {
+    try {
+      const token = localStorage.getItem('homigo_token')
+      if (!token) return
+
+      const response = await fetch(`http://localhost:5000/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const updatedUser = {
+          id: data.data.id,
+          name: data.data.full_name,
+          email: data.data.email,
+          role: data.data.role,
+          phone: data.data.phone,
+          is_verified: data.data.is_verified || false
+        }
+
+        setUser(updatedUser)
+        localStorage.setItem('homigo_user', JSON.stringify(updatedUser))
+        return { success: true, user: updatedUser }
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error)
+      return { success: false, error: error.message }
+    }
   }
 
   const isAuthenticated = () => {
@@ -104,6 +175,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    refreshProfile,
     isAuthenticated,
     hasRole
   }

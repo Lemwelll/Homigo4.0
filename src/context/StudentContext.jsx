@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const StudentContext = createContext()
+
+const API_URL = 'http://localhost:5000'
 
 export const useStudent = () => {
   const context = useContext(StudentContext)
@@ -11,140 +13,208 @@ export const useStudent = () => {
 }
 
 export const StudentProvider = ({ children }) => {
-  const [student, setStudent] = useState({
-    name: 'Lemuel',
-    email: 'lemuel@university.edu',
-    studentId: '2021-12345',
-    university: 'University of the Philippines'
-  })
+  const [student, setStudent] = useState(null)
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const [properties] = useState([
-    {
-      id: 1,
-      title: 'Modern Studio near UP Diliman',
-      location: 'Quezon City',
-      city: 'Quezon City',
-      price: 8500,
-      priceRange: '5000-10000',
-      bedrooms: 1,
-      bathrooms: 1,
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
-      description: 'A cozy and modern studio apartment perfect for students. Located just 5 minutes from UP Diliman campus.',
-      landlordName: 'Maria Santos',
-      landlordPhone: '+63 912 345 6789',
-      landlordEmail: 'maria@email.com',
-      amenities: ['WiFi', 'Air Conditioning', 'Security', 'Water', 'Electricity'],
-      address: '123 University Avenue, Quezon City',
-      paymentRules: {
-        allowReservations: true,
-        enableDownpayment: true,
-        downpaymentAmount: 3000
+  // Get JWT token
+  const getToken = () => {
+    return localStorage.getItem('homigo_token')
+  }
+
+  // Fetch student profile from backend
+  const fetchStudentProfile = async () => {
+    try {
+      const token = getToken()
+      console.log('🔑 Token:', token ? 'Found' : 'Not found')
+      
+      if (!token) {
+        console.log('❌ No token, skipping profile fetch')
+        setLoading(false)
+        return
       }
-    },
-    {
-      id: 2,
-      title: 'Cozy Room with WiFi',
-      location: 'Manila',
-      city: 'Manila',
-      price: 5000,
-      priceRange: '0-5000',
-      bedrooms: 1,
-      bathrooms: 1,
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500',
-      description: 'Affordable room with high-speed internet, perfect for students on a budget.',
-      landlordName: 'Juan Reyes',
-      landlordPhone: '+63 923 456 7890',
-      landlordEmail: 'juan@email.com',
-      amenities: ['WiFi', 'Water', 'Electricity'],
-      address: '456 Taft Avenue, Manila',
-      paymentRules: {
-        allowReservations: true,
-        enableDownpayment: false,
-        downpaymentAmount: 0
+
+      console.log('📡 Fetching profile from:', `${API_URL}/auth/profile`)
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      console.log('📊 Profile response status:', response.status)
+      const data = await response.json()
+      console.log('📦 Profile data:', data)
+
+      if (data.success) {
+        console.log('✅ Setting student profile:', data.data.full_name)
+        setStudent({
+          name: data.data.full_name,
+          email: data.data.email,
+          studentId: data.data.student_id_number || '',
+          university: data.data.university || ''
+        })
+      } else {
+        console.error('❌ Profile fetch failed:', data.message)
+        // Set loading to false even if fetch fails
+        setLoading(false)
       }
-    },
-    {
-      id: 3,
-      title: 'Spacious 2BR Apartment',
-      location: 'Makati',
-      city: 'Makati',
-      price: 15000,
-      priceRange: '15000+',
-      bedrooms: 2,
-      bathrooms: 2,
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500',
-      description: 'Spacious apartment ideal for sharing with roommates. Near business district.',
-      landlordName: 'Ana Garcia',
-      landlordPhone: '+63 934 567 8901',
-      landlordEmail: 'ana@email.com',
-      amenities: ['WiFi', 'Air Conditioning', 'Parking', 'Security', 'Water', 'Electricity'],
-      address: '789 Ayala Avenue, Makati',
-      paymentRules: {
-        allowReservations: true,
-        enableDownpayment: true,
-        downpaymentAmount: 5000
-      }
-    },
-    {
-      id: 4,
-      title: 'Affordable Bedspace',
-      location: 'Taft Avenue, Manila',
-      city: 'Manila',
-      price: 3500,
-      priceRange: '0-5000',
-      bedrooms: 1,
-      bathrooms: 1,
-      verified: false,
-      image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=500',
-      description: 'Budget-friendly bedspace near universities and public transport.',
-      landlordName: 'Pedro Cruz',
-      landlordPhone: '+63 945 678 9012',
-      landlordEmail: 'pedro@email.com',
-      amenities: ['WiFi', 'Water', 'Electricity'],
-      address: '321 Taft Avenue, Manila'
-    },
-    {
-      id: 5,
-      title: 'Fully Furnished Condo',
-      location: 'Pasig',
-      city: 'Pasig',
-      price: 12000,
-      priceRange: '10000-15000',
-      bedrooms: 1,
-      bathrooms: 1,
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=500',
-      description: 'Modern condo with all amenities included. Perfect for professionals and students.',
-      landlordName: 'Lisa Tan',
-      landlordPhone: '+63 956 789 0123',
-      landlordEmail: 'lisa@email.com',
-      amenities: ['WiFi', 'Air Conditioning', 'Parking', 'Security', 'Gym', 'Pool'],
-      address: '555 Ortigas Avenue, Pasig'
-    },
-    {
-      id: 6,
-      title: 'Student Dormitory Room',
-      location: 'Quezon City',
-      city: 'Quezon City',
-      price: 4500,
-      priceRange: '0-5000',
-      bedrooms: 1,
-      bathrooms: 1,
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=500',
-      description: 'Clean and safe dormitory room near UP campus with 24/7 security.',
-      landlordName: 'Robert Lee',
-      landlordPhone: '+63 967 890 1234',
-      landlordEmail: 'robert@email.com',
-      amenities: ['WiFi', 'Security', 'Water', 'Electricity', 'Laundry'],
-      address: '888 Commonwealth Avenue, Quezon City'
+    } catch (error) {
+      console.error('❌ Error fetching student profile:', error)
+      setLoading(false)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
 
-  const [favorites, setFavorites] = useState([1, 3])
+  // Fetch verified properties from backend - OPTIMIZED
+  const fetchVerifiedProperties = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`${API_URL}/properties/verified`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformedProperties = data.data.map(prop => {
+          const price = parseFloat(prop.rent_price)
+          
+          // Determine price range
+          let priceRange = 'all'
+          if (price < 5000) priceRange = '0-5000'
+          else if (price >= 5000 && price < 10000) priceRange = '5000-10000'
+          else if (price >= 10000 && price < 15000) priceRange = '10000-15000'
+          else priceRange = '15000+'
+
+          // Extract city from location
+          const city = prop.location.split(',')[0].trim()
+
+          // Get all images sorted by display_order
+          const allImages = prop.property_images
+            ?.sort((a, b) => a.display_order - b.display_order)
+            ?.map(img => img.image_url) || []
+
+          return {
+            id: prop.id,
+            landlord_id: prop.landlord_id,
+            title: prop.title,
+            location: prop.location,
+            city: city,
+            price: price,
+            priceRange: priceRange,
+            bedrooms: prop.bedrooms,
+            bathrooms: prop.bathrooms,
+            verified: prop.verification_status === 'verified',
+            image: allImages[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
+            images: allImages.length > 0 ? allImages : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'],
+            description: prop.description,
+            landlordName: prop.users?.full_name || 'Landlord',
+            landlordPhone: prop.users?.phone || '',
+            landlordEmail: prop.users?.email || '',
+            landlord: {
+              name: prop.users?.full_name || 'Landlord',
+              phone: prop.users?.phone || '',
+              email: prop.users?.email || ''
+            },
+            amenities: prop.property_amenities?.map(a => a.amenity_name) || [],
+            address: prop.address,
+            paymentRules: {
+              allowReservations: prop.allow_reservations,
+              enableDownpayment: prop.enable_downpayment,
+              downpaymentAmount: parseFloat(prop.downpayment_amount || 0)
+            }
+          }
+        })
+        
+        setProperties(transformedProperties);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('❌ Request timeout');
+      } else {
+        console.error('❌ Error fetching properties:', error);
+      }
+      setProperties([]); // Set empty array on error
+    }
+  };
+
+  // Fetch properties and profile on mount - OPTIMIZED (prevent multiple calls)
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeData = async () => {
+      const user = JSON.parse(localStorage.getItem('homigo_user') || '{}');
+      
+      if (user.role === 'student') {
+        // Use localStorage data as fallback
+        if (user.name && isMounted) {
+          setStudent({
+            name: user.name,
+            email: user.email || '',
+            studentId: user.studentId || '',
+            university: user.university || ''
+          });
+        }
+        // Try to fetch from API (will update if successful)
+        if (isMounted) {
+          await fetchStudentProfile();
+        }
+      } else {
+        if (isMounted) setLoading(false);
+      }
+      
+      // Fetch properties only once
+      if (isMounted) {
+        await fetchVerifiedProperties();
+      }
+    };
+
+    initializeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [])
+
+  const [favorites, setFavorites] = useState([])
+
+  // Fetch favorites from backend
+  const fetchFavorites = async () => {
+    try {
+      const token = getToken()
+      if (!token) return
+
+      const response = await fetch(`${API_URL}/favorites`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Extract just the property IDs
+        const favoriteIds = data.data.map(fav => fav.property_id)
+        setFavorites(favoriteIds)
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error)
+    }
+  }
+
+  // Fetch favorites on mount
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('homigo_user') || '{}')
+    if (user.role === 'student') {
+      fetchFavorites()
+    }
+  }, [])
 
   const [conversations, setConversations] = useState([
     {
@@ -176,12 +246,47 @@ export const StudentProvider = ({ children }) => {
     }
   ])
 
-  const toggleFavorite = (propertyId) => {
-    setFavorites(prev =>
-      prev.includes(propertyId)
-        ? prev.filter(id => id !== propertyId)
-        : [...prev, propertyId]
-    )
+  const toggleFavorite = async (propertyId) => {
+    try {
+      const token = getToken()
+      if (!token) return
+
+      const isFav = favorites.includes(propertyId)
+
+      if (isFav) {
+        // Remove from favorites
+        const response = await fetch(`${API_URL}/favorites/${propertyId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          setFavorites(prev => prev.filter(id => id !== propertyId))
+        }
+      } else {
+        // Add to favorites
+        const response = await fetch(`${API_URL}/favorites`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ property_id: propertyId })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          setFavorites(prev => [...prev, propertyId])
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    }
   }
 
   const isFavorite = (propertyId) => {
@@ -228,11 +333,14 @@ export const StudentProvider = ({ children }) => {
       favorites,
       conversations,
       stats,
+      loading,
       toggleFavorite,
       isFavorite,
       getFavoriteProperties,
       sendMessage,
-      updateProfile
+      updateProfile,
+      fetchVerifiedProperties,
+      fetchFavorites
     }}>
       {children}
     </StudentContext.Provider>

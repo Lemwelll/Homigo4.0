@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, Home, ArrowLeft } from 'lucide-react';
-import { dummyProperties, searchProperties } from '../data/dummyProperties';
 import { useAuth } from '../context/AuthContext';
+
+const API_URL = 'http://localhost:5000'
 
 const PublicListings = () => {
   const navigate = useNavigate();
@@ -10,27 +11,79 @@ const PublicListings = () => {
   const { user } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [allProperties, setAllProperties] = useState([]);
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch properties from backend
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/properties/verified`);
+      const data = await response.json();
+
+      if (data.success) {
+        const transformedProperties = data.data.map(prop => ({
+          id: prop.id,
+          name: prop.title,
+          city: prop.location.split(',')[0].trim(),
+          location: prop.location,
+          address: prop.address,
+          price: parseFloat(prop.rent_price),
+          type: `${prop.bedrooms} Bedroom, ${prop.bathrooms} Bathroom`,
+          photos: prop.property_images?.map(img => img.image_url) || ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'],
+          amenities: prop.property_amenities?.map(a => a.amenity_name) || [],
+          description: prop.description
+        }));
+        
+        setAllProperties(transformedProperties);
+        setFilteredProperties(transformedProperties);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Search properties
+  const searchPropertiesLocal = (query) => {
+    if (!query.trim()) {
+      return allProperties;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    return allProperties.filter(property => 
+      property.name.toLowerCase().includes(lowerQuery) ||
+      property.city.toLowerCase().includes(lowerQuery) ||
+      property.location.toLowerCase().includes(lowerQuery) ||
+      property.address.toLowerCase().includes(lowerQuery)
+    );
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
 
   useEffect(() => {
     const query = searchParams.get('q') || '';
     setSearchQuery(query);
-    const results = searchProperties(query);
+    const results = searchPropertiesLocal(query);
     setFilteredProperties(results);
-  }, [searchParams]);
+  }, [searchParams, allProperties]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const results = searchProperties(searchQuery);
+    const results = searchPropertiesLocal(searchQuery);
     setFilteredProperties(results);
     navigate(`/listings?q=${encodeURIComponent(searchQuery)}`);
   };
 
   const handleViewAll = () => {
     setSearchQuery('');
-    setFilteredProperties(dummyProperties);
+    setFilteredProperties(allProperties);
     navigate('/listings');
   };
 
@@ -105,28 +158,35 @@ const PublicListings = () => {
 
       {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {searchQuery ? `Search Results for "${searchQuery}"` : 'All Properties'}
-            </h2>
-            <p className="text-gray-600 mt-1">
-              {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} found
-            </p>
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading properties...</p>
           </div>
-          
-          {searchQuery && (
-            <button
-              onClick={handleViewAll}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              View All Properties
-            </button>
-          )}
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {searchQuery ? `Search Results for "${searchQuery}"` : 'All Properties'}
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} found
+                </p>
+              </div>
+              
+              {searchQuery && (
+                <button
+                  onClick={handleViewAll}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View All Properties
+                </button>
+              )}
+            </div>
 
-        {/* Property Grid */}
-        {filteredProperties.length > 0 ? (
+            {/* Property Grid */}
+            {filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProperties.map((property) => (
               <div
@@ -199,6 +259,8 @@ const PublicListings = () => {
               View All Properties
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
 

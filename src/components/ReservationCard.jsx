@@ -61,6 +61,14 @@ const ReservationCard = ({ reservation, onCancel, onProceedToPayment }) => {
             Reservation Declined
           </span>
         )
+      case 'completed':
+      case 'paid':
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+            <CheckCircle className="w-4 h-4 mr-1" />
+            Payment Completed
+          </span>
+        )
       default:
         return null
     }
@@ -89,17 +97,17 @@ const ReservationCard = ({ reservation, onCancel, onProceedToPayment }) => {
           </div>
           <div className="flex items-center space-x-2">
             <div className="bg-white rounded-lg px-3 py-2 text-center">
-              <div className="text-2xl font-bold text-yellow-700">{timeLeft.hours}</div>
+              <div className="text-2xl font-bold text-yellow-700">{timeLeft.hours || 0}</div>
               <div className="text-xs text-gray-600">Hours</div>
             </div>
             <span className="text-2xl font-bold text-yellow-700">:</span>
             <div className="bg-white rounded-lg px-3 py-2 text-center">
-              <div className="text-2xl font-bold text-yellow-700">{timeLeft.minutes}</div>
+              <div className="text-2xl font-bold text-yellow-700">{timeLeft.minutes || 0}</div>
               <div className="text-xs text-gray-600">Minutes</div>
             </div>
             <span className="text-2xl font-bold text-yellow-700">:</span>
             <div className="bg-white rounded-lg px-3 py-2 text-center">
-              <div className="text-2xl font-bold text-yellow-700">{timeLeft.seconds}</div>
+              <div className="text-2xl font-bold text-yellow-700">{timeLeft.seconds || 0}</div>
               <div className="text-xs text-gray-600">Seconds</div>
             </div>
           </div>
@@ -138,21 +146,31 @@ const ReservationCard = ({ reservation, onCancel, onProceedToPayment }) => {
         </div>
       )}
 
+      {/* Completed Message */}
+      {(reservation.status === 'completed' || reservation.status === 'paid') && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-sm font-medium text-blue-900 mb-1">Payment Completed!</p>
+          <p className="text-sm text-blue-700">
+            Your payment has been processed and held in escrow. Check "My Bookings" for booking details.
+          </p>
+        </div>
+      )}
+
       {/* Property Details */}
       <div className="space-y-2 text-sm text-gray-600 mb-4">
         <div className="flex justify-between">
           <span>Reserved on:</span>
           <span className="font-medium text-gray-900">
-            {new Date(reservation.reservedDate).toLocaleDateString()}
+            {reservation.reservedDate ? new Date(reservation.reservedDate).toLocaleDateString() : 'N/A'}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Monthly rent:</span>
-          <span className="font-medium text-primary-600">{reservation.price}</span>
+          <span className="font-medium text-primary-600">{reservation.price || 'N/A'}</span>
         </div>
         <div className="flex justify-between">
           <span>Landlord:</span>
-          <span className="font-medium text-gray-900">{reservation.landlordName}</span>
+          <span className="font-medium text-gray-900">{reservation.landlordName || 'N/A'}</span>
         </div>
       </div>
 
@@ -176,6 +194,7 @@ const ReservationCard = ({ reservation, onCancel, onProceedToPayment }) => {
             Proceed to Payment
           </button>
         )}
+        {/* No action buttons for completed reservations */}
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useProperties } from '../context/PropertyContext'
 import { Eye, Edit, Trash2, PlusCircle, Search } from 'lucide-react'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import EditPropertyModal from '../components/EditPropertyModal'
+import ImageCarousel from '../components/ImageCarousel'
 
 const LandlordProperties = () => {
   const navigate = useNavigate()
@@ -74,11 +75,13 @@ const LandlordProperties = () => {
             {filteredProperties.map((property) => (
               <div key={property.id} className="card hover:shadow-xl transition-all duration-300">
                 <div className="flex flex-col md:flex-row gap-6">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full md:w-48 h-48 object-cover rounded-lg"
-                  />
+                  <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden">
+                    <ImageCarousel
+                      images={property.images || [property.image]}
+                      alt={property.title}
+                      height="h-48"
+                    />
+                  </div>
                   
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">

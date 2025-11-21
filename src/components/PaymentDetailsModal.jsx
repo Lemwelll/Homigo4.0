@@ -4,6 +4,37 @@ import PaymentStatusBadge from './PaymentStatusBadge'
 const PaymentDetailsModal = ({ transaction, onClose, userType }) => {
   if (!transaction) return null
 
+  // Generate timeline from transaction data if not provided
+  const generateTimeline = (trans) => {
+    const timeline = []
+    
+    if (trans.createdAt || trans.heldDate) {
+      timeline.push({
+        status: 'held',
+        date: trans.heldDate || trans.createdAt,
+        label: 'Payment Held in Escrow'
+      })
+    }
+    
+    if (trans.status === 'released' && trans.releasedDate) {
+      timeline.push({
+        status: 'released',
+        date: trans.releasedDate,
+        label: 'Payment Released to Landlord'
+      })
+    }
+    
+    if (trans.status === 'refunded' && trans.refundedDate) {
+      timeline.push({
+        status: 'refunded',
+        date: trans.refundedDate,
+        label: 'Payment Refunded to Student'
+      })
+    }
+    
+    return timeline
+  }
+
   const getTimelineIcon = (status) => {
     switch (status) {
       case 'released':
@@ -57,10 +88,49 @@ const PaymentDetailsModal = ({ transaction, onClose, userType }) => {
               <span className="text-gray-600">Transaction ID</span>
               <span className="font-semibold text-gray-900">{transaction.id}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Amount</span>
-              <span className="font-semibold text-gray-900">₱{transaction.amount.toLocaleString()}</span>
-            </div>
+            
+            {/* Payment Type Badge */}
+            {transaction.paymentType && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Payment Type</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  transaction.paymentType === 'full' 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {transaction.paymentType === 'full' ? 'Paid in Full' : 'Downpayment'}
+                </span>
+              </div>
+            )}
+            
+            {/* Show downpayment details if applicable */}
+            {transaction.paymentType === 'downpayment' && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Downpayment Amount</span>
+                  <span className="font-semibold text-blue-600">₱{transaction.amount.toLocaleString()}</span>
+                </div>
+                {transaction.remainingBalance > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Remaining Balance</span>
+                    <span className="font-semibold text-yellow-600">₱{transaction.remainingBalance.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-2 border-t border-gray-300">
+                  <span className="text-gray-900 font-medium">Total Property Price</span>
+                  <span className="font-bold text-gray-900">₱{(transaction.amount + (transaction.remainingBalance || 0)).toLocaleString()}</span>
+                </div>
+              </>
+            )}
+            
+            {/* Show full amount if not downpayment */}
+            {transaction.paymentType !== 'downpayment' && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Amount</span>
+                <span className="font-semibold text-gray-900">₱{transaction.amount.toLocaleString()}</span>
+              </div>
+            )}
+            
             <div className="flex justify-between">
               <span className="text-gray-600">Date</span>
               <span className="font-semibold text-gray-900">{transaction.date}</span>
@@ -83,11 +153,11 @@ const PaymentDetailsModal = ({ transaction, onClose, userType }) => {
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Payment Timeline</h4>
             <div className="space-y-4">
-              {transaction.timeline.map((item, index) => (
+              {(transaction.timeline || generateTimeline(transaction)).map((item, index) => (
                 <div key={index} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     {getTimelineIcon(item.status)}
-                    {index < transaction.timeline.length - 1 && (
+                    {index < (transaction.timeline || generateTimeline(transaction)).length - 1 && (
                       <div className="w-0.5 h-12 bg-gray-300 my-1"></div>
                     )}
                   </div>

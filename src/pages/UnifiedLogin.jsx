@@ -40,7 +40,7 @@ const UnifiedLogin = () => {
     setError('')
     setLoading(true)
 
-    const result = login({ ...formData, role: selectedRole })
+    const result = await login({ ...formData, role: selectedRole })
 
     if (result.success) {
       // Check if there's a redirect URL stored
@@ -50,13 +50,13 @@ const UnifiedLogin = () => {
         localStorage.removeItem('redirectAfterLogin')
         navigate(redirectUrl)
       } else {
-        // Navigate to appropriate dashboard
+        // Navigate to appropriate dashboard based on user role from backend
         const dashboardRoutes = {
           student: '/student/dashboard',
           landlord: '/landlord/dashboard',
           admin: '/admin/dashboard'
         }
-        navigate(dashboardRoutes[selectedRole])
+        navigate(dashboardRoutes[result.user.role])
       }
     } else {
       setError(result.error || 'Login failed')

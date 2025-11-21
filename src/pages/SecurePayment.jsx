@@ -58,27 +58,75 @@ const SecurePayment = () => {
     setShowPaymentForm(true)
   }
 
-  const handlePaymentSubmit = () => {
-    // Create booking with payment type
-    const bookingData = {
-      ...property,
-      paymentType: selectedPaymentType,
-      amountPaid: selectedPaymentType === 'full' ? fullAmount : downpaymentAmount,
-      remainingBalance: selectedPaymentType === 'downpayment' ? fullAmount - downpaymentAmount : 0
+  const handlePaymentSubmit = async () => {
+    try {
+      // Prepare booking data in the format backend expects
+      const amountPaid = selectedPaymentType === 'full' ? fullAmount : downpaymentAmount
+      const totalAmount = selectedPaymentType === 'full' ? fullAmount : fullAmount
+      const moveInDate = new Date()
+      moveInDate.setDate(moveInDate.getDate() + 14) // 2 weeks from now
+
+      // Get property ID - handle both naming conventions
+      const propertyId = property.id || property.propertyId
+      
+      // Get landlord ID - handle both naming conventions
+      let landlordId = property.landlord_id || property.landlordId
+      
+      // If still missing, try to fetch from backend
+      if (!landlordId && propertyId) {
+        console.log('⚠️ landlord_id missing, fetching from backend...')
+        const token = localStorage.getItem('homigo_token')
+        const response = await fetch(`http://localhost:5000/properties/${propertyId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        const data = await response.json()
+        if (data.success && data.data) {
+          landlordId = data.data.landlord_id
+          console.log('✅ Fetched landlord_id:', landlordId)
+        }
+      }
+
+      const bookingData = {
+        property_id: propertyId,
+        landlord_id: landlordId,
+        move_in_date: moveInDate.toISOString().split('T')[0],
+        lease_duration_months: 12,
+        monthly_rent: amountPaid,
+        total_amount: totalAmount,
+        payment_method: selectedPaymentType, // 'full' or 'downpayment'
+        payment_reference: `REF-${Date.now()}`,
+        student_message: `Booking for ${property.title}`
+      }
+
+      console.log('📤 Sending booking data:', bookingData)
+      console.log('💰 Payment type:', selectedPaymentType)
+      console.log('💵 Amount paid:', amountPaid)
+
+      // Validate required fields before sending
+      if (!bookingData.property_id || !bookingData.landlord_id || !bookingData.move_in_date) {
+        throw new Error(`Missing required fields: property_id=${bookingData.property_id}, landlord_id=${bookingData.landlord_id}, move_in_date=${bookingData.move_in_date}`)
+      }
+
+      await createBooking(bookingData)
+      
+      setShowPaymentForm(false)
+      setToast({
+        message: `Payment submitted! Your ${selectedPaymentType === 'full' ? 'full payment' : 'downpayment'} is now held in escrow.`,
+        type: 'success'
+      })
+
+      setTimeout(() => {
+        navigate('/student/bookings')
+      }, 2000)
+    } catch (error) {
+      console.error('Payment submission error:', error)
+      setToast({
+        message: 'Failed to create booking. Please try again.',
+        type: 'error'
+      })
     }
-
-    const booking = createBooking(bookingData)
-    createEscrowPayment(booking.id)
-
-    setShowPaymentForm(false)
-    setToast({
-      message: `Payment submitted! Your ${selectedPaymentType === 'full' ? 'full payment' : 'downpayment'} is now held in escrow.`,
-      type: 'success'
-    })
-
-    setTimeout(() => {
-      navigate('/student/bookings')
-    }, 2000)
   }
 
   return (

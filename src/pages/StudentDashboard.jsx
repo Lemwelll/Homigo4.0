@@ -6,7 +6,21 @@ import { Search, Heart, MessageSquare, Settings, Home, TrendingUp, ArrowRight } 
 
 const StudentDashboard = () => {
   const navigate = useNavigate()
-  const { student, stats, properties } = useStudent()
+  const { student, stats, properties, loading } = useStudent()
+
+  // Show loading state while student profile is being fetched
+  if (loading || !student) {
+    return (
+      <DashboardLayout role="student">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   const quickActions = [
     {

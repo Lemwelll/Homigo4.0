@@ -16,13 +16,13 @@ const LandlordBookings = () => {
 
   const filteredBookings = filter === 'All'
     ? bookings
-    : bookings.filter(b => b.status === filter)
+    : bookings.filter(b => b.status?.toLowerCase() === filter.toLowerCase())
 
   const stats = {
     total: bookings.length,
-    pending: bookings.filter(b => b.status === 'Pending').length,
-    approved: bookings.filter(b => b.status === 'Approved').length,
-    rejected: bookings.filter(b => b.status === 'Rejected').length
+    pending: bookings.filter(b => b.status?.toLowerCase() === 'pending').length,
+    approved: bookings.filter(b => b.status?.toLowerCase() === 'approved').length,
+    rejected: bookings.filter(b => b.status?.toLowerCase() === 'rejected').length
   }
 
   const handleApprove = (bookingId) => {

@@ -37,6 +37,8 @@ import { ReservationProvider } from './context/ReservationContext'
 import { BookingProvider } from './context/BookingContext'
 import { EscrowProvider } from './context/EscrowContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { ActivityProvider } from './context/ActivityContext'
+import { MessageProvider } from './context/MessageContext'
 
 function App() {
   return (
@@ -47,7 +49,9 @@ function App() {
             <ReservationProvider>
               <BookingProvider>
                 <EscrowProvider>
+                  <MessageProvider>
                   <NotificationProvider>
+                    <ActivityProvider>
                     <Router>
                       <Routes>
                 {/* Public Routes */}
@@ -264,7 +268,9 @@ function App() {
                 />
                       </Routes>
                     </Router>
-                  </NotificationProvider>
+                      </ActivityProvider>
+                    </NotificationProvider>
+                  </MessageProvider>
                 </EscrowProvider>
               </BookingProvider>
             </ReservationProvider>

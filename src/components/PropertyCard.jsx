@@ -1,9 +1,17 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Bed, Bath, CheckCircle } from 'lucide-react'
+import ImageCarousel from './ImageCarousel'
 
 const PropertyCard = ({ property }) => {
   const navigate = useNavigate()
+
+  // Get all images or fallback to single image
+  const images = property.images && property.images.length > 0 
+    ? property.images 
+    : property.image 
+    ? [property.image] 
+    : []
 
   return (
     <div
@@ -11,18 +19,18 @@ const PropertyCard = ({ property }) => {
       className="card cursor-pointer transform hover:scale-105 transition-all duration-300 p-0 overflow-hidden"
     >
       <div className="relative">
-        <img
-          src={property.image}
+        <ImageCarousel 
+          images={images}
           alt={property.title}
-          className="w-full h-48 object-cover"
+          height="h-48"
         />
         {property.verified && (
-          <div className="absolute top-3 right-3 bg-secondary-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 text-sm font-semibold">
+          <div className="absolute top-3 right-3 bg-secondary-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 text-sm font-semibold z-20">
             <CheckCircle className="w-4 h-4" />
             <span>Verified</span>
           </div>
         )}
-        <div className="absolute bottom-3 left-3 bg-primary-500 text-white px-4 py-2 rounded-lg font-bold text-lg">
+        <div className="absolute bottom-3 left-3 bg-primary-500 text-white px-4 py-2 rounded-lg font-bold text-lg z-20">
           ₱{property.price.toLocaleString()}/mo
         </div>
       </div>

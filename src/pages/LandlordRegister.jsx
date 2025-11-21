@@ -1,13 +1,105 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Phone, Upload, ArrowLeft, Building2 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const LandlordRegister = () => {
   const navigate = useNavigate()
+  const { register } = useAuth()
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    businessName: ''
+  })
+  const [governmentIdFile, setGovernmentIdFile] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigate('/landlord/dashboard')
+    setError('')
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    // Validate password strength
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    setLoading(true)
+
+    const result = await register({
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      role: 'landlord',
+      businessName: formData.businessName
+    })
+
+    if (result.success) {
+      // If government ID file is selected, save base64 to database
+      if (governmentIdFile && result.user.id) {
+        try {
+          const uploadResponse = await fetch('http://localhost:5000/upload/government-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId: result.user.id,
+              base64Image: governmentIdFile
+            })
+          })
+
+          const uploadData = await uploadResponse.json()
+          
+          if (!uploadData.success) {
+            console.error('File upload failed:', uploadData.message)
+          }
+        } catch (uploadError) {
+          console.error('File upload error:', uploadError)
+        }
+      }
+
+      navigate('/landlord/dashboard')
+    } else {
+      setError(result.error || 'Registration failed')
+    }
+
+    setLoading(false)
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size must be less than 5MB')
+        return
+      }
+      // Validate file type
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].includes(file.type)) {
+        setError('Only JPEG, PNG, and GIF files are allowed')
+        return
+      }
+
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setGovernmentIdFile(reader.result) // Store base64 string
+      }
+      reader.readAsDataURL(file)
+      setError('')
+    }
   }
 
   return (
@@ -34,6 +126,12 @@ const LandlordRegister = () => {
         </div>
 
         <div className="card">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -44,6 +142,8 @@ const LandlordRegister = () => {
                     type="text"
                     placeholder="Maria Santos"
                     className="input-field pl-10"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     required
                   />
                 </div>
@@ -57,6 +157,8 @@ const LandlordRegister = () => {
                     type="email"
                     placeholder="landlord@email.com"
                     className="input-field pl-10"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                   />
                 </div>
@@ -72,6 +174,8 @@ const LandlordRegister = () => {
                     type="tel"
                     placeholder="+63 912 345 6789"
                     className="input-field pl-10"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
                   />
                 </div>
@@ -85,6 +189,8 @@ const LandlordRegister = () => {
                     type="text"
                     placeholder="Santos Properties"
                     className="input-field pl-10"
+                    value={formData.businessName}
+                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                   />
                 </div>
               </div>
@@ -99,6 +205,8 @@ const LandlordRegister = () => {
                     type="password"
                     placeholder="Create a password"
                     className="input-field pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                   />
                 </div>
@@ -112,6 +220,8 @@ const LandlordRegister = () => {
                     type="password"
                     placeholder="Confirm password"
                     className="input-field pl-10"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
                   />
                 </div>
@@ -119,12 +229,21 @@ const LandlordRegister = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Verification</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-secondary-500 transition-colors cursor-pointer">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Verification (Optional)</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-secondary-500 transition-colors cursor-pointer"
+                   onClick={() => document.getElementById('governmentIdInput').click()}>
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600 mb-1">Upload your Government ID</p>
-                <p className="text-sm text-gray-500">PNG, JPG up to 5MB (Driver's License, Passport, etc.)</p>
-                <input type="file" className="hidden" accept="image/*" />
+                <p className="text-gray-600 mb-1">
+                  {governmentIdFile ? '✓ Government ID Selected' : 'Upload your Government ID'}
+                </p>
+                <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB (Driver's License, Passport, etc.)</p>
+                <input 
+                  id="governmentIdInput"
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
               </div>
             </div>
 
@@ -135,8 +254,12 @@ const LandlordRegister = () => {
               </span>
             </div>
 
-            <button type="submit" className="btn-secondary w-full">
-              Create Account
+            <button 
+              type="submit" 
+              className="btn-secondary w-full"
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 

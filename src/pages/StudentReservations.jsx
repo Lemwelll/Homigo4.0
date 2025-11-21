@@ -5,15 +5,47 @@ import ReservationList from '../components/ReservationList'
 import Toast from '../components/Toast'
 import { useReservation } from '../context/ReservationContext'
 import { useStudent } from '../context/StudentContext'
+import { useBooking } from '../context/BookingContext'
 import { Clock } from 'lucide-react'
 
 const StudentReservations = () => {
   const navigate = useNavigate()
   const { getStudentReservations, cancelReservation } = useReservation()
   const { properties } = useStudent()
+  const { getStudentBookings } = useBooking()
   const [toast, setToast] = useState(null)
 
   const reservations = getStudentReservations()
+  const bookings = getStudentBookings()
+  
+  console.log('🔍 All reservations:', reservations)
+  console.log('🔍 All bookings:', bookings)
+  
+  // Check if a reservation has a corresponding booking (payment completed)
+  const hasBooking = (reservation) => {
+    const found = bookings.some(booking => {
+      console.log('Comparing:', {
+        bookingPropertyId: booking.propertyId,
+        reservationPropertyId: reservation.property_id,
+        match: booking.propertyId === reservation.property_id
+      })
+      return booking.propertyId === reservation.property_id
+    })
+    console.log(`Reservation ${reservation.propertyTitle} has booking:`, found)
+    return found
+  }
+  
+  // Mark reservations as completed if they have bookings
+  const reservationsWithStatus = reservations.map(reservation => {
+    const newStatus = hasBooking(reservation) ? 'completed' : reservation.status
+    console.log(`Reservation ${reservation.propertyTitle}: ${reservation.status} -> ${newStatus}`)
+    return {
+      ...reservation,
+      status: newStatus
+    }
+  })
+  
+  console.log('📋 Final reservations with status:', reservationsWithStatus)
 
   const handleCancel = (reservationId) => {
     if (window.confirm('Are you sure you want to cancel this reservation?')) {
@@ -27,16 +59,23 @@ const StudentReservations = () => {
     const numericPrice = parseInt(reservation.price.replace(/[^\d]/g, ''))
     
     // Find the full property details to get payment rules
-    const property = properties.find(p => p.id === reservation.propertyId)
+    // Use property_id from reservation (snake_case from backend)
+    const property = properties.find(p => p.id === reservation.property_id)
+    
+    console.log('🔍 Reservation object:', reservation)
+    console.log('🔍 Property ID:', reservation.property_id)
+    console.log('🔍 Landlord ID:', reservation.landlord_id)
     
     // Create property object using reservation data (which is what student actually reserved)
     // but merge with property payment rules if available
     const propertyData = {
-      id: reservation.propertyId,
+      id: reservation.property_id, // Use snake_case from backend
+      propertyId: reservation.property_id, // Also add camelCase for compatibility
       title: reservation.propertyTitle,
       image: reservation.propertyImage,
       price: numericPrice,
-      landlordId: reservation.landlordId,
+      landlord_id: reservation.landlord_id, // Use snake_case for backend compatibility
+      landlordId: reservation.landlord_id, // Keep camelCase for display
       landlordName: reservation.landlordName,
       landlordPhone: reservation.landlordPhone || property?.landlordPhone || '+63 912 345 6789',
       landlordEmail: reservation.landlordEmail || property?.landlordEmail || 'landlord@email.com',
@@ -56,7 +95,7 @@ const StudentReservations = () => {
       }
     }
     
-    console.log('Proceeding to payment with property:', propertyData)
+    console.log('✅ Proceeding to payment with property:', propertyData)
     navigate('/student/secure-payment', { state: { property: propertyData } })
   }
 
@@ -74,7 +113,7 @@ const StudentReservations = () => {
         </div>
 
         <ReservationList
-          reservations={reservations}
+          reservations={reservationsWithStatus}
           onCancel={handleCancel}
           onProceedToPayment={handleProceedToPayment}
         />

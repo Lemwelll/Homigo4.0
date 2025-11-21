@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import AdminLayout from '../components/AdminLayout'
 import StatusBadge from '../components/StatusBadge'
 import { useAdmin } from '../context/AdminContext'
-import { CheckCircle, Ban, Eye, Search, Mail, Phone, X, User, Calendar } from 'lucide-react'
+import { CheckCircle, Ban, Eye, Search, Mail, Phone, X, User, FileText, Download } from 'lucide-react'
+
+const API_URL = 'http://localhost:5000'
 
 const AdminLandlords = () => {
   const { landlords, verifyLandlord, suspendLandlord } = useAdmin()
@@ -10,6 +12,9 @@ const AdminLandlords = () => {
   const [showSuccess, setShowSuccess] = useState(null)
   const [selectedLandlord, setSelectedLandlord] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false)
+  const [documents, setDocuments] = useState([])
+  const [loadingDocuments, setLoadingDocuments] = useState(false)
 
   const filteredLandlords = landlords.filter(landlord =>
     landlord.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -33,6 +38,33 @@ const AdminLandlords = () => {
     setShowSuccess({ type: 'suspended', name: landlordName })
     setShowModal(false)
     setTimeout(() => setShowSuccess(null), 3000)
+  }
+
+  const handleViewDocuments = async (landlordId) => {
+    setLoadingDocuments(true)
+    setShowDocumentsModal(true)
+    
+    try {
+      const token = localStorage.getItem('homigo_token')
+      const response = await fetch(`${API_URL}/admin/landlords/${landlordId}/documents`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setDocuments(data.data || [])
+      } else {
+        setDocuments([])
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error)
+      setDocuments([])
+    } finally {
+      setLoadingDocuments(false)
+    }
   }
 
   const verifiedCount = landlords.filter(l => l.status === 'Verified').length
@@ -269,15 +301,13 @@ const AdminLandlords = () => {
                       <p className="font-semibold text-green-900">{selectedLandlord.bankAccount}</p>
                     </div>
                     <div>
-                      <a
-                        href={selectedLandlord.documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewDocuments(selectedLandlord.id)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         <Eye className="w-4 h-4" />
                         View Uploaded Documents
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -333,6 +363,96 @@ const AdminLandlords = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Documents Viewer Modal */}
+        {showDocumentsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-primary-600" />
+                  Verification Documents
+                </h2>
+                <button
+                  onClick={() => setShowDocumentsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {loadingDocuments ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-4">Loading documents...</p>
+                  </div>
+                ) : documents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">No documents uploaded yet</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      The landlord hasn't uploaded any verification documents
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-bold text-gray-900 capitalize">
+                              {doc.document_type === 'validId' && 'Valid ID'}
+                              {doc.document_type === 'businessPermit' && 'Business Permit'}
+                              {doc.document_type === 'bankStatement' && 'Bank Statement'}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                            </p>
+                            {doc.verified && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full mt-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          <a
+                            href={doc.document_url}
+                            download
+                            className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 text-sm"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </a>
+                        </div>
+                        
+                        {/* Document Preview */}
+                        <div className="bg-gray-50 rounded-lg p-2">
+                          {doc.document_url.startsWith('data:image') ? (
+                            <img
+                              src={doc.document_url}
+                              alt={doc.document_type}
+                              className="w-full h-auto max-h-96 object-contain rounded"
+                            />
+                          ) : (
+                            <div className="text-center py-8">
+                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                              <p className="text-gray-600 text-sm">
+                                Click download to view this document
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

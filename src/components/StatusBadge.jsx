@@ -2,34 +2,44 @@ import { Clock, CheckCircle, XCircle } from 'lucide-react'
 
 const StatusBadge = ({ status }) => {
   const getStatusConfig = () => {
-    switch (status) {
-      case 'Pending':
+    const normalizedStatus = status?.toLowerCase()
+    
+    switch (normalizedStatus) {
+      case 'pending':
         return {
-          bg: 'bg-yellow-100',
-          text: 'text-yellow-700',
+          bg: 'bg-gray-100',
+          text: 'text-gray-700',
           icon: Clock,
           label: 'Pending'
         }
-      case 'Approved':
+      case 'approved':
         return {
           bg: 'bg-green-100',
           text: 'text-green-700',
           icon: CheckCircle,
           label: 'Approved'
         }
-      case 'Rejected':
+      case 'rejected':
+      case 'denied':
         return {
           bg: 'bg-red-100',
           text: 'text-red-700',
           icon: XCircle,
           label: 'Rejected'
         }
+      case 'cancelled':
+        return {
+          bg: 'bg-gray-100',
+          text: 'text-gray-700',
+          icon: XCircle,
+          label: 'Cancelled'
+        }
       default:
         return {
           bg: 'bg-gray-100',
           text: 'text-gray-700',
           icon: Clock,
-          label: status
+          label: status || 'Unknown'
         }
     }
   }

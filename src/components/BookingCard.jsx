@@ -17,11 +17,11 @@ const BookingCard = ({ booking, userRole, onApprove, onReject, onCancel }) => {
 
         {/* Booking Details */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-            <h3 className="font-semibold text-gray-900 truncate">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+            <h3 className="font-semibold text-lg text-gray-900 truncate">
               {booking.propertyTitle}
             </h3>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap gap-2">
               <StatusBadge status={booking.status} />
               {booking.escrow && (
                 <EscrowStatusBadge status={booking.escrow.status} />
@@ -39,7 +39,7 @@ const BookingCard = ({ booking, userRole, onApprove, onReject, onCancel }) => {
             </div>
           </div>
           
-          <div className="space-y-1 text-sm text-gray-600 mb-3">
+          <div className="space-y-2 text-sm text-gray-600 mb-3">
             <div className="flex items-center">
               <User className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">
@@ -78,7 +78,7 @@ const BookingCard = ({ booking, userRole, onApprove, onReject, onCancel }) => {
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             {/* Landlord Actions */}
-            {userRole === 'landlord' && booking.status === 'Pending' && (
+            {userRole === 'landlord' && booking.status.toLowerCase() === 'pending' && (
               <div className="flex gap-2">
                 <button
                   onClick={() => onApprove(booking.id)}
@@ -97,7 +97,7 @@ const BookingCard = ({ booking, userRole, onApprove, onReject, onCancel }) => {
             )}
 
             {/* Student Actions */}
-            {userRole === 'student' && booking.status === 'Pending' && onCancel && (
+            {userRole === 'student' && booking.status.toLowerCase() === 'pending' && onCancel && (
               <button
                 onClick={() => onCancel(booking.id)}
                 className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
@@ -107,15 +107,15 @@ const BookingCard = ({ booking, userRole, onApprove, onReject, onCancel }) => {
             )}
             
             {/* Status Messages */}
-            {booking.status !== 'Pending' && (
+            {booking.status.toLowerCase() !== 'pending' && (
               <div className="text-sm text-gray-600">
-                {booking.status === 'Approved' && (
+                {booking.status.toLowerCase() === 'approved' && (
                   <span className="text-green-600 font-medium">
                     ✓ {userRole === 'landlord' ? 'Approved' : 'Booking Confirmed'}
                     {booking.escrow?.status === 'Released' && ' • Payment Released'}
                   </span>
                 )}
-                {booking.status === 'Rejected' && (
+                {booking.status.toLowerCase() === 'rejected' && (
                   <span className="text-red-600 font-medium">
                     ✗ {userRole === 'landlord' ? 'Rejected' : 'Booking Declined'}
                     {booking.escrow?.status === 'Refunded' && ' • Payment Refunded'}

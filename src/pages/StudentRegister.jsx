@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Phone, Upload, ArrowLeft } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const StudentRegister = () => {
   const navigate = useNavigate()
+  const { register } = useAuth()
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -11,12 +13,95 @@ const StudentRegister = () => {
     password: '',
     confirmPassword: '',
     university: '',
-    studentId: null
+    studentIdNumber: ''
   })
+  const [studentIdFile, setStudentIdFile] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigate('/student/dashboard')
+    setError('')
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    // Validate password strength
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    setLoading(true)
+
+    const result = await register({
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      role: 'student',
+      studentIdNumber: formData.studentIdNumber,
+      university: formData.university
+    })
+
+    if (result.success) {
+      // If student ID file is selected, save base64 to database
+      if (studentIdFile && result.user.id) {
+        try {
+          const uploadResponse = await fetch('http://localhost:5000/upload/student-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId: result.user.id,
+              base64Image: studentIdFile
+            })
+          })
+
+          const uploadData = await uploadResponse.json()
+          
+          if (!uploadData.success) {
+            console.error('File upload failed:', uploadData.message)
+          }
+        } catch (uploadError) {
+          console.error('File upload error:', uploadError)
+        }
+      }
+
+      navigate('/student/dashboard')
+    } else {
+      setError(result.error || 'Registration failed')
+    }
+
+    setLoading(false)
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size must be less than 5MB')
+        return
+      }
+      // Validate file type
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].includes(file.type)) {
+        setError('Only JPEG, PNG, and GIF files are allowed')
+        return
+      }
+
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setStudentIdFile(reader.result) // Store base64 string
+      }
+      reader.readAsDataURL(file)
+      setError('')
+    }
   }
 
   return (
@@ -43,6 +128,12 @@ const StudentRegister = () => {
         </div>
 
         <div className="card">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -53,6 +144,8 @@ const StudentRegister = () => {
                     type="text"
                     placeholder="Juan Dela Cruz"
                     className="input-field pl-10"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     required
                   />
                 </div>
@@ -66,6 +159,8 @@ const StudentRegister = () => {
                     type="email"
                     placeholder="student@university.edu"
                     className="input-field pl-10"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                   />
                 </div>
@@ -81,6 +176,8 @@ const StudentRegister = () => {
                     type="tel"
                     placeholder="+63 912 345 6789"
                     className="input-field pl-10"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
                   />
                 </div>
@@ -92,9 +189,23 @@ const StudentRegister = () => {
                   type="text"
                   placeholder="University of the Philippines"
                   className="input-field"
+                  value={formData.university}
+                  onChange={(e) => setFormData({ ...formData, university: e.target.value })}
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Student ID Number</label>
+              <input
+                type="text"
+                placeholder="2021-12345"
+                className="input-field"
+                value={formData.studentIdNumber}
+                onChange={(e) => setFormData({ ...formData, studentIdNumber: e.target.value })}
+                required
+              />
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -106,6 +217,8 @@ const StudentRegister = () => {
                     type="password"
                     placeholder="Create a password"
                     className="input-field pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                   />
                 </div>
@@ -119,6 +232,8 @@ const StudentRegister = () => {
                     type="password"
                     placeholder="Confirm password"
                     className="input-field pl-10"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
                   />
                 </div>
@@ -126,12 +241,21 @@ const StudentRegister = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Student ID Verification</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Student ID Verification (Optional)</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                   onClick={() => document.getElementById('studentIdInput').click()}>
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600 mb-1">Upload your Student ID</p>
-                <p className="text-sm text-gray-500">PNG, JPG up to 5MB</p>
-                <input type="file" className="hidden" accept="image/*" />
+                <p className="text-gray-600 mb-1">
+                  {studentIdFile ? '✓ Student ID Selected' : 'Upload your Student ID'}
+                </p>
+                <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                <input 
+                  id="studentIdInput"
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
               </div>
             </div>
 
@@ -142,8 +266,12 @@ const StudentRegister = () => {
               </span>
             </div>
 
-            <button type="submit" className="btn-primary w-full">
-              Create Account
+            <button 
+              type="submit" 
+              className="btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 

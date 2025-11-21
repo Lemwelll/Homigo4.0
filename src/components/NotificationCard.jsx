@@ -47,11 +47,11 @@ const NotificationCard = ({ notification, compact = false, onClick }) => {
   const iconColor = getIconColor()
 
   const handleClick = () => {
-    if (!notification.isRead) {
+    if (!notification.is_read) {
       markAsRead(notification.id)
     }
-    if (notification.actionUrl) {
-      navigate(notification.actionUrl)
+    if (notification.action_url) {
+      navigate(notification.action_url)
     }
     if (onClick) onClick()
   }
@@ -61,13 +61,15 @@ const NotificationCard = ({ notification, compact = false, onClick }) => {
     deleteNotification(notification.id)
   }
 
-  const timeAgo = formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })
+  const timeAgo = notification.created_at 
+    ? formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })
+    : 'Just now'
 
   return (
     <div
       onClick={handleClick}
       className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer group ${
-        !notification.isRead ? 'bg-blue-50' : ''
+        !notification.is_read ? 'bg-blue-50' : ''
       } ${compact ? '' : 'rounded-lg border border-gray-200 mb-3'}`}
     >
       <div className="flex gap-3">
@@ -79,10 +81,10 @@ const NotificationCard = ({ notification, compact = false, onClick }) => {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h4 className={`text-sm font-semibold text-gray-900 ${!notification.isRead ? 'font-bold' : ''}`}>
+            <h4 className={`text-sm font-semibold text-gray-900 ${!notification.is_read ? 'font-bold' : ''}`}>
               {notification.title}
             </h4>
-            {!notification.isRead && (
+            {!notification.is_read && (
               <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-1"></span>
             )}
           </div>

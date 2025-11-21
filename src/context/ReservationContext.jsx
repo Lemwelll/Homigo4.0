@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from './AuthContext'
 
 const ReservationContext = createContext()
@@ -11,179 +11,273 @@ export const useReservation = () => {
   return context
 }
 
-// Generate initial reservations with dummy data
-const getInitialReservations = () => {
-  const now = new Date()
-  const twoDaysLater = new Date(now.getTime() + 48 * 60 * 60 * 1000)
-  const threeDaysLater = new Date(now.getTime() + 72 * 60 * 60 * 1000)
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-
-  return [
-    {
-      id: 1,
-      propertyId: 1,
-      propertyTitle: "Modern Studio near UP Diliman",
-      propertyImage: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400",
-      studentId: "student@homigo.com",
-      studentName: "Demo Student",
-      studentEmail: "student@homigo.com",
-      studentPhone: "+63 917 123 4567",
-      landlordId: "maria.santos@homigo.com",
-      landlordName: "Maria Santos",
-      price: "₱8,500/month",
-      status: "reserved",
-      reservedDate: now.toISOString(),
-      expiryDate: twoDaysLater.toISOString(),
-      message: "Hi! I'm interested in this property. I'm a 3rd year student at UP Diliman."
-    },
-    {
-      id: 2,
-      propertyId: 2,
-      propertyTitle: "Cozy Apartment in Katipunan",
-      propertyImage: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400",
-      studentId: "student@homigo.com",
-      studentName: "Demo Student",
-      studentEmail: "student@homigo.com",
-      studentPhone: "+63 917 123 4567",
-      landlordId: "john.reyes@homigo.com",
-      landlordName: "John Reyes",
-      price: "₱9,200/month",
-      status: "approved",
-      reservedDate: oneDayAgo.toISOString(),
-      expiryDate: threeDaysLater.toISOString(),
-      message: "Looking for a long-term rental. Can move in by end of November."
-    },
-    {
-      id: 3,
-      propertyId: 3,
-      propertyTitle: "Shared Room in Quezon City",
-      propertyImage: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400",
-      studentId: "student@homigo.com",
-      studentName: "Demo Student",
-      studentEmail: "student@homigo.com",
-      studentPhone: "+63 917 123 4567",
-      landlordId: "angela.reyes@homigo.com",
-      landlordName: "Angela Reyes",
-      price: "₱6,000/month",
-      status: "rejected",
-      reservedDate: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      expiryDate: oneDayAgo.toISOString(),
-      rejectionReason: "Property is no longer available for the requested dates.",
-      message: "Need a place for one semester only."
-    },
-    {
-      id: 4,
-      propertyId: 4,
-      propertyTitle: "Spacious Condo Unit in Taft Avenue",
-      propertyImage: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=400",
-      studentId: "carlos.mendoza@email.com",
-      studentName: "Carlos Mendoza",
-      studentEmail: "carlos.mendoza@email.com",
-      studentPhone: "+63 921 567 8901",
-      landlordId: "landlord@homigo.com",
-      landlordName: "Demo Landlord",
-      price: "₱12,000/month",
-      status: "reserved",
-      reservedDate: now.toISOString(),
-      expiryDate: twoDaysLater.toISOString(),
-      message: "I'm a graduate student at DLSU. Looking for a quiet place to study."
-    },
-    {
-      id: 5,
-      propertyId: 5,
-      propertyTitle: "Budget-Friendly Dorm in España",
-      propertyImage: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400",
-      studentId: "sofia.ramos@email.com",
-      studentName: "Sofia Ramos",
-      studentEmail: "sofia.ramos@email.com",
-      studentPhone: "+63 922 678 9012",
-      landlordId: "landlord@homigo.com",
-      landlordName: "Demo Landlord",
-      price: "₱5,500/month",
-      status: "reserved",
-      reservedDate: now.toISOString(),
-      expiryDate: threeDaysLater.toISOString(),
-      message: "UST student. Need accommodation for the school year."
-    }
-  ]
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export const ReservationProvider = ({ children }) => {
   const { user } = useAuth()
 
-  const [reservations, setReservations] = useState(() => {
-    const stored = localStorage.getItem('homigoReservations')
-    if (stored) {
-      try {
-        const parsedReservations = JSON.parse(stored)
-        if (parsedReservations && parsedReservations.length > 0) {
-          return parsedReservations
-        }
-      } catch (error) {
-        console.error('Error parsing stored reservations:', error)
-      }
-    }
-    return getInitialReservations()
-  })
+  const [reservations, setReservations] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [reservationsCache, setReservationsCache] = useState(new Map())
+  const [lastReservationsFetch, setLastReservationsFetch] = useState(0)
 
-  // Save to localStorage whenever reservations change
+  // Get JWT token from localStorage
+  const getToken = () => {
+    return localStorage.getItem('homigo_token')
+  }
+
+  // Fetch reservations from API - OPTIMIZED with caching
+  const fetchReservations = useCallback(async (forceRefresh = false) => {
+    try {
+      const now = Date.now()
+      const cacheKey = 'user-reservations'
+      const CACHE_DURATION = 15000 // 15 seconds
+
+      // Check cache first
+      if (!forceRefresh && reservationsCache.has(cacheKey) && (now - lastReservationsFetch) < CACHE_DURATION) {
+        setReservations(reservationsCache.get(cacheKey))
+        return
+      }
+
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        console.log('No token found for reservations')
+        setReservations([])
+        setLoading(false)
+        return
+      }
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
+      const response = await fetch(`${API_URL}/reservations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+      const data = await response.json()
+
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformedReservations = data.data.map(res => ({
+          id: res.id,
+          property_id: res.property_id,
+          student_id: res.student_id,
+          landlord_id: res.landlord_id,
+          status: res.status,
+          message: res.message,
+          rejection_reason: res.rejection_reason,
+          propertyTitle: res.properties?.title || 'Property',
+          propertyImage: res.properties?.property_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
+          price: `₱${parseFloat(res.properties?.rent_price || 0).toLocaleString()}`,
+          landlordName: res.properties?.users?.full_name || res.users?.full_name || 'Landlord',
+          studentName: res.users?.full_name || 'Student',
+          studentEmail: res.users?.email || '',
+          expiryDate: res.expiry_date,
+          reservedDate: res.created_at,
+          rejectionReason: res.rejection_reason
+        }))
+        setReservations(transformedReservations)
+        setReservationsCache(prev => new Map(prev).set(cacheKey, transformedReservations))
+        setLastReservationsFetch(now)
+      } else {
+        setError(data.message)
+        setReservations([])
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('Reservations request timeout')
+      } else {
+        console.error('Error fetching reservations:', error)
+      }
+      setError(error.message)
+      setReservations([])
+    } finally {
+      setLoading(false)
+    }
+  }, [reservationsCache, lastReservationsFetch])
+
+  // Fetch reservations on mount and when user changes
   useEffect(() => {
-    localStorage.setItem('homigoReservations', JSON.stringify(reservations))
-  }, [reservations])
-
-  const createReservation = (property, message = '') => {
-    const now = new Date()
-    const expiryDate = new Date(now.getTime() + 48 * 60 * 60 * 1000) // 48 hours
-
-    const newReservation = {
-      id: Date.now(),
-      propertyId: property.id,
-      propertyTitle: property.title,
-      propertyImage: property.image,
-      studentId: user?.email,
-      studentName: user?.name,
-      studentEmail: user?.email,
-      studentPhone: user?.phone || "+63 917 123 4567",
-      landlordId: property.landlordId || "landlord@homigo.com",
-      landlordName: property.landlordName || "Property Owner",
-      price: `₱${property.price.toLocaleString()}/month`,
-      status: "reserved",
-      reservedDate: now.toISOString(),
-      expiryDate: expiryDate.toISOString(),
-      message: message
+    if (user && (user.role === 'student' || user.role === 'landlord')) {
+      fetchReservations()
     }
+  }, [user])
 
-    setReservations(prev => [...prev, newReservation])
-    return newReservation
+  const createReservation = async (property, message = '') => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch(`${API_URL}/reservations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          property_id: property.id,
+          message: message
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Add new reservation to state
+        setReservations(prev => [...prev, data.data])
+        return { success: true, data: data.data }
+      } else {
+        // Return error without throwing
+        setError(data.message)
+        return { success: false, error: data.message }
+      }
+    } catch (error) {
+      console.error('Error creating reservation:', error)
+      const errorMessage = error.message || 'Failed to create reservation'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const approveReservation = (reservationId) => {
-    setReservations(prev => prev.map(reservation => {
-      if (reservation.id === reservationId) {
-        return {
-          ...reservation,
+  const approveReservation = async (reservationId) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch(`${API_URL}/reservations/${reservationId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           status: 'approved'
-        }
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update reservation in state
+        setReservations(prev => prev.map(reservation => 
+          reservation.id === reservationId 
+            ? { ...reservation, status: 'approved' }
+            : reservation
+        ))
+        return data.data
+      } else {
+        throw new Error(data.message)
       }
-      return reservation
-    }))
+    } catch (error) {
+      console.error('Error approving reservation:', error)
+      setError(error.message)
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const rejectReservation = (reservationId, reason = '') => {
-    setReservations(prev => prev.map(reservation => {
-      if (reservation.id === reservationId) {
-        return {
-          ...reservation,
+  const rejectReservation = async (reservationId, reason = '') => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch(`${API_URL}/reservations/${reservationId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           status: 'rejected',
-          rejectionReason: reason
-        }
+          rejection_reason: reason
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update reservation in state
+        setReservations(prev => prev.map(reservation => 
+          reservation.id === reservationId 
+            ? { ...reservation, status: 'rejected', rejection_reason: reason }
+            : reservation
+        ))
+        return data.data
+      } else {
+        throw new Error(data.message)
       }
-      return reservation
-    }))
+    } catch (error) {
+      console.error('Error rejecting reservation:', error)
+      setError(error.message)
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const cancelReservation = (reservationId) => {
-    setReservations(prev => prev.filter(reservation => reservation.id !== reservationId))
+  const cancelReservation = async (reservationId) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch(`${API_URL}/reservations/${reservationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update reservation in state
+        setReservations(prev => prev.map(reservation => 
+          reservation.id === reservationId 
+            ? { ...reservation, status: 'cancelled' }
+            : reservation
+        ))
+        return data.data
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error cancelling reservation:', error)
+      setError(error.message)
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
 
   const expireReservation = (reservationId) => {
@@ -199,36 +293,32 @@ export const ReservationProvider = ({ children }) => {
   }
 
   const getStudentReservations = () => {
-    if (user?.role === 'student') {
-      return reservations.filter(reservation => 
-        reservation.studentId === user?.email || 
-        reservation.studentId === 'student@homigo.com'
-      )
-    }
-    return reservations.filter(reservation => reservation.studentId === user?.email)
+    // Show all student reservations including completed ones
+    return reservations.filter(reservation => 
+      reservation.student_id === user?.id
+    )
   }
 
   const getLandlordReservations = () => {
-    if (user?.role === 'landlord') {
-      return reservations.filter(reservation => 
-        reservation.landlordId === user?.email || 
-        reservation.landlordId === 'landlord@homigo.com'
-      )
-    }
-    return reservations.filter(reservation => reservation.landlordId === user?.email)
+    return reservations.filter(reservation => 
+      reservation.landlord_id === user?.id
+    )
   }
 
   const isPropertyReserved = (propertyId) => {
     return reservations.some(
       reservation =>
-        reservation.propertyId === propertyId &&
-        reservation.studentId === user?.email &&
+        reservation.property_id === propertyId &&
+        reservation.student_id === user?.id &&
         (reservation.status === "reserved" || reservation.status === "approved")
     )
   }
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     reservations,
+    loading,
+    error,
     createReservation,
     approveReservation,
     rejectReservation,
@@ -236,8 +326,9 @@ export const ReservationProvider = ({ children }) => {
     expireReservation,
     getStudentReservations,
     getLandlordReservations,
-    isPropertyReserved
-  }
+    isPropertyReserved,
+    fetchReservations
+  }), [reservations, loading, error, fetchReservations])
 
   return (
     <ReservationContext.Provider value={value}>

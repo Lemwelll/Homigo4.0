@@ -41,8 +41,8 @@ const AdminDashboard = () => {
     }
   ]
 
-  const pendingProperties = properties.filter(p => p.status === 'Pending').slice(0, 3)
-  const pendingLandlords = landlords.filter(l => l.status === 'Pending').slice(0, 3)
+  const pendingProperties = (properties || []).filter(p => p.status === 'Pending').slice(0, 3)
+  const pendingLandlords = (landlords || []).filter(l => l.status === 'Pending').slice(0, 3)
 
   return (
     <AdminLayout>
@@ -103,7 +103,7 @@ const AdminDashboard = () => {
           <div className="card">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activities</h2>
             <div className="space-y-3">
-              {activities.slice(0, 5).map((activity) => (
+              {(activities || []).slice(0, 5).map((activity) => (
                 <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                   <div className={`p-2 rounded-full ${
                     activity.type === 'verification' ? 'bg-green-100' :

@@ -1,15 +1,40 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
-import { PlusCircle, Home, Eye, MessageSquare, TrendingUp, ArrowRight } from 'lucide-react'
+import { PlusCircle, Home, Eye, MessageSquare, TrendingUp, ArrowRight, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useProperties } from '../context/PropertyContext'
+import { useActivity } from '../context/ActivityContext'
+import { useAuth } from '../context/AuthContext'
 
 const LandlordDashboard = () => {
   const navigate = useNavigate()
+  const { user, refreshProfile } = useAuth()
   const { properties, stats } = useProperties()
+  const { activities, getTimeAgo } = useActivity()
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(true)
   
-  // Landlord info (in real app, this would come from auth context)
-  const landlordName = 'Maria Santos'
+  // Refresh profile on mount to get latest verification status
+  useEffect(() => {
+    refreshProfile()
+  }, [])
+
+  // Check if user has dismissed the verified banner before
+  useEffect(() => {
+    if (user?.is_verified) {
+      const dismissed = localStorage.getItem(`verified_banner_dismissed_${user.id}`)
+      setShowVerifiedBanner(!dismissed)
+    }
+  }, [user])
+
+  const dismissVerifiedBanner = () => {
+    setShowVerifiedBanner(false)
+    if (user?.id) {
+      localStorage.setItem(`verified_banner_dismissed_${user.id}`, 'true')
+    }
+  }
+  
+  // Landlord info from auth context
+  const landlordName = user?.name || 'Landlord'
 
   const statsDisplay = [
     { label: 'Total Properties', value: stats.totalProperties, icon: Home, color: 'bg-secondary-500' },
@@ -19,17 +44,66 @@ const LandlordDashboard = () => {
   ]
 
   const recentProperties = properties.slice(0, 2)
-  
-  // Activity feed
-  const activities = [
-    { id: 1, message: 'Your listing "Modern Studio near UP Diliman" was verified', time: '2 hours ago', type: 'success' },
-    { id: 2, message: 'New inquiry received for "Cozy Room with WiFi"', time: '5 hours ago', type: 'info' },
-    { id: 3, message: 'Property "Modern Studio" received 15 new views', time: '1 day ago', type: 'info' }
-  ]
 
   return (
     <DashboardLayout userType="landlord">
       <div className="space-y-6">
+        {/* Verification Status Banner */}
+        {user?.role === 'landlord' && !user?.is_verified && (
+          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <svg className="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h3 className="text-xl font-bold text-yellow-900 mb-2">
+                    Account Verification Pending
+                  </h3>
+                  <p className="text-yellow-800 leading-relaxed">
+                    Your account is pending verification. Complete your profile and upload verification documents to get verified.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/landlord/settings')}
+                  className="inline-flex items-center px-5 py-2.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-semibold shadow-sm"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {user?.role === 'landlord' && user?.is_verified && showVerifiedBanner && (
+          <div className="bg-green-50 border-2 border-green-400 rounded-xl p-6 shadow-sm relative">
+            <button
+              onClick={dismissVerifiedBanner}
+              className="absolute top-4 right-4 p-1 hover:bg-green-100 rounded-lg transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-5 h-5 text-green-700" />
+            </button>
+            <div className="flex items-center gap-4 pr-8">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-green-900">
+                  ✓ Verified Account
+                </h3>
+                <p className="text-green-700">
+                  Your account has been verified by our admin team
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Banner */}
         <div className="card bg-gradient-to-br from-secondary-500 to-secondary-600 text-white overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32"></div>
@@ -80,25 +154,33 @@ const LandlordDashboard = () => {
         <div className="card">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
           <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`p-2 rounded-full ${
-                  activity.type === 'success' ? 'bg-green-100' : 'bg-blue-100'
-                }`}>
-                  {activity.type === 'success' ? (
-                    <TrendingUp className={`w-4 h-4 ${
-                      activity.type === 'success' ? 'text-green-600' : 'text-blue-600'
-                    }`} />
-                  ) : (
-                    <MessageSquare className="w-4 h-4 text-blue-600" />
-                  )}
+            {activities.length > 0 ? (
+              activities.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className={`p-2 rounded-full ${
+                    activity.type === 'verification' ? 'bg-green-100' : 
+                    activity.type === 'booking' ? 'bg-blue-100' : 'bg-gray-100'
+                  }`}>
+                    {activity.type === 'verification' ? (
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                    ) : activity.type === 'booking' ? (
+                      <MessageSquare className="w-4 h-4 text-blue-600" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-800">{activity.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">{getTimeAgo(activity.time)}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-800">{activity.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>No recent activity</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

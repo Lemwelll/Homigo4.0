@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const AdminContext = createContext()
+
+const API_URL = 'http://localhost:5000'
 
 export const useAdmin = () => {
   const context = useContext(AdminContext)
@@ -11,193 +13,262 @@ export const useAdmin = () => {
 }
 
 export const AdminProvider = ({ children }) => {
-  const [landlords, setLandlords] = useState([
-    {
-      id: 1,
-      name: 'Maria Santos',
-      email: 'maria@email.com',
-      phone: '+63 912 345 6789',
-      totalProperties: 2,
-      status: 'Verified',
-      joinDate: '2025-01-05',
-      documentUrl: '#',
-      address: '123 Main Street, Quezon City, Metro Manila',
-      businessName: 'Santos Property Management',
-      businessAddress: '456 Business Ave, Makati City',
-      tinNumber: '123-456-789-000',
-      validId: 'Driver\'s License - A12-34-567890',
-      bankAccount: 'BDO - 1234567890',
-      emergencyContact: 'Juan Santos - +63 917 111 2222',
-      verifiedDate: '2025-01-06',
-      verifiedBy: 'Admin User'
-    },
-    {
-      id: 2,
-      name: 'Juan Reyes',
-      email: 'juan@email.com',
-      phone: '+63 923 456 7890',
-      totalProperties: 1,
-      status: 'Pending',
-      joinDate: '2025-01-10',
-      documentUrl: '#',
-      address: '789 Taft Avenue, Manila',
-      businessName: 'Reyes Rentals',
-      businessAddress: '321 Commerce St, Manila',
-      tinNumber: '987-654-321-000',
-      validId: 'Passport - P1234567',
-      bankAccount: 'BPI - 9876543210',
-      emergencyContact: 'Maria Reyes - +63 918 222 3333',
-      verifiedDate: null,
-      verifiedBy: null
-    },
-    {
-      id: 3,
-      name: 'Pedro Cruz',
-      email: 'pedro@email.com',
-      phone: '+63 934 567 8901',
-      totalProperties: 0,
-      status: 'Pending',
-      joinDate: '2025-01-12',
-      documentUrl: '#',
-      address: '555 España Blvd, Sampaloc, Manila',
-      businessName: 'Cruz Properties',
-      businessAddress: '777 University Ave, Manila',
-      tinNumber: '111-222-333-444',
-      validId: 'UMID - 0001-2345678-9',
-      bankAccount: 'Metrobank - 1122334455',
-      emergencyContact: 'Ana Cruz - +63 919 333 4444',
-      verifiedDate: null,
-      verifiedBy: null
-    }
-  ])
+  const [landlords, setLandlords] = useState([])
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const [properties, setProperties] = useState([
-    {
-      id: 1,
-      title: 'Modern Studio near UP Diliman',
-      landlordName: 'Maria Santos',
-      landlordId: 1,
-      location: 'Quezon City',
-      price: 8500,
-      status: 'Verified',
-      submittedDate: '2025-01-06',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'
-    },
-    {
-      id: 2,
-      title: 'Cozy Room with WiFi',
-      landlordName: 'Juan Reyes',
-      landlordId: 2,
-      location: 'Manila',
-      price: 5000,
-      status: 'Pending',
-      submittedDate: '2025-01-11',
-      image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500'
-    },
-    {
-      id: 3,
-      title: 'Spacious 2BR Apartment',
-      landlordName: 'Maria Santos',
-      landlordId: 1,
-      location: 'Makati',
-      price: 15000,
-      status: 'Pending',
-      submittedDate: '2025-01-12',
-      image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'
-    }
-  ])
+  // Get JWT token from localStorage
+  const getToken = () => {
+    return localStorage.getItem('homigo_token')
+  }
 
-  const [reports, setReports] = useState([
-    {
-      id: 1,
-      propertyId: 1,
-      propertyTitle: 'Modern Studio near UP Diliman',
-      reportedBy: 'Student User',
-      reason: 'Misleading photos',
-      status: 'Pending Review',
-      reportDate: '2025-01-13',
-      description: 'The actual property looks different from the photos'
-    },
-    {
-      id: 2,
-      propertyId: 2,
-      propertyTitle: 'Cozy Room with WiFi',
-      reportedBy: 'Another Student',
-      reason: 'Unresponsive landlord',
-      status: 'Resolved',
-      reportDate: '2025-01-10',
-      description: 'Landlord not responding to messages'
-    }
-  ])
+  // Fetch all landlords
+  const fetchLandlords = async () => {
+    try {
+      setLoading(true)
+      const token = getToken()
+      
+      if (!token) {
+        console.log('❌ No token found - user not logged in')
+        return
+      }
 
-  const [activities, setActivities] = useState([
-    { id: 1, type: 'verification', message: 'New property submitted by Maria Santos', time: '2 hours ago' },
-    { id: 2, type: 'landlord', message: 'New landlord registration: Juan Reyes', time: '5 hours ago' },
-    { id: 3, type: 'report', message: 'Property reported by student', time: '1 day ago' }
-  ])
+      console.log('📡 Fetching landlords from:', `${API_URL}/admin/landlords`)
+
+      const response = await fetch(`${API_URL}/admin/landlords`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      console.log('📥 Response status:', response.status)
+
+      const data = await response.json()
+      console.log('📦 Response data:', data)
+
+      if (data.success) {
+        console.log('✅ Landlords fetched successfully:', data.count, 'landlords')
+        
+        // Transform backend data to match frontend format
+        const transformedLandlords = data.data.map(landlord => ({
+          id: landlord.id,
+          name: landlord.full_name || 'Unknown',
+          email: landlord.email,
+          phone: landlord.phone || 'N/A',
+          businessName: landlord.business_name || 'N/A',
+          tinNumber: 'N/A',
+          address: 'N/A',
+          businessAddress: 'N/A',
+          emergencyContact: 'N/A',
+          validId: 'N/A',
+          bankAccount: 'N/A',
+          documentUrl: '#',
+          totalProperties: landlord.total_properties || 0,
+          joinDate: new Date(landlord.created_at).toLocaleDateString(),
+          status: landlord.is_verified ? 'Verified' : 'Pending',
+          verifiedDate: landlord.verified_at ? new Date(landlord.verified_at).toLocaleDateString() : null,
+          verifiedBy: landlord.verified_by || null
+        }))
+        
+        console.log('🔄 Transformed landlords:', transformedLandlords)
+        setLandlords(transformedLandlords)
+      } else {
+        console.error('❌ Failed to fetch landlords:', data.message)
+      }
+    } catch (error) {
+      console.error('❌ Error fetching landlords:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch all properties (for admin)
+  const fetchAllProperties = async (statusFilter = null) => {
+    try {
+      setLoading(true)
+      const token = getToken()
+      
+      if (!token) {
+        console.log('No token found')
+        return
+      }
+
+      const url = statusFilter 
+        ? `${API_URL}/properties/admin/all?status=${statusFilter}`
+        : `${API_URL}/properties/admin/all`
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformedProperties = data.data.map(prop => ({
+          id: prop.id,
+          title: prop.title,
+          landlordName: prop.users?.full_name || 'Unknown',
+          landlordId: prop.landlord_id,
+          location: prop.location,
+          price: parseFloat(prop.rent_price),
+          status: prop.verification_status === 'verified' ? 'Verified' : 
+                  prop.verification_status === 'pending_verification' ? 'Pending' : 'Rejected',
+          submittedDate: new Date(prop.created_at).toISOString().split('T')[0],
+          image: prop.property_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
+          description: prop.description,
+          address: prop.address,
+          bedrooms: prop.bedrooms,
+          bathrooms: prop.bathrooms,
+          amenities: prop.property_amenities?.map(a => a.amenity_name) || []
+        }))
+        
+        setProperties(transformedProperties)
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch data on mount
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('homigo_user') || '{}')
+    if (user.role === 'admin') {
+      fetchAllProperties()
+      fetchLandlords()
+    }
+  }, [])
 
   // Property verification actions
-  const approveProperty = (propertyId) => {
-    setProperties(properties.map(prop =>
-      prop.id === propertyId ? { ...prop, status: 'Verified' } : prop
-    ))
-    addActivity('verification', `Property approved: ${properties.find(p => p.id === propertyId)?.title}`)
-  }
+  const approveProperty = async (propertyId, adminNote = '') => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/properties/admin/verify/${propertyId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'verify',
+          adminNote
+        })
+      })
 
-  const rejectProperty = (propertyId) => {
-    setProperties(properties.map(prop =>
-      prop.id === propertyId ? { ...prop, status: 'Rejected' } : prop
-    ))
-    addActivity('verification', `Property rejected: ${properties.find(p => p.id === propertyId)?.title}`)
-  }
+      const data = await response.json()
 
-  // Landlord management actions
-  const verifyLandlord = (landlordId) => {
-    setLandlords(landlords.map(landlord =>
-      landlord.id === landlordId ? { ...landlord, status: 'Verified' } : landlord
-    ))
-    addActivity('landlord', `Landlord verified: ${landlords.find(l => l.id === landlordId)?.name}`)
-  }
-
-  const suspendLandlord = (landlordId) => {
-    setLandlords(landlords.map(landlord =>
-      landlord.id === landlordId ? { ...landlord, status: 'Suspended' } : landlord
-    ))
-    addActivity('landlord', `Landlord suspended: ${landlords.find(l => l.id === landlordId)?.name}`)
-  }
-
-  // Report management actions
-  const resolveReport = (reportId) => {
-    setReports(reports.map(report =>
-      report.id === reportId ? { ...report, status: 'Resolved' } : report
-    ))
-    addActivity('report', 'Report resolved')
-  }
-
-  const dismissReport = (reportId) => {
-    setReports(reports.map(report =>
-      report.id === reportId ? { ...report, status: 'Dismissed' } : report
-    ))
-    addActivity('report', 'Report dismissed')
-  }
-
-  // Helper function to add activity
-  const addActivity = (type, message) => {
-    const newActivity = {
-      id: Date.now(),
-      type,
-      message,
-      time: 'Just now'
+      if (data.success) {
+        // Refresh properties list
+        await fetchAllProperties()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error approving property:', error)
+      throw error
     }
-    setActivities([newActivity, ...activities])
   }
 
-  // Calculate statistics
+  const rejectProperty = async (propertyId, adminNote = '') => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/properties/admin/verify/${propertyId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'reject',
+          adminNote
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh properties list
+        await fetchAllProperties()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error rejecting property:', error)
+      throw error
+    }
+  }
+
+  // Landlord verification actions
+  const verifyLandlord = async (landlordId) => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/admin/landlords/${landlordId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh landlords list
+        await fetchLandlords()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error verifying landlord:', error)
+      throw error
+    }
+  }
+
+  const suspendLandlord = async (landlordId, reason = '') => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/admin/landlords/${landlordId}/suspend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh landlords list
+        await fetchLandlords()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error suspending landlord:', error)
+      throw error
+    }
+  }
+
+  // Calculate statistics from real data
   const stats = {
     totalLandlords: landlords.length,
     pendingVerifications: properties.filter(p => p.status === 'Pending').length,
     activeProperties: properties.filter(p => p.status === 'Verified').length,
-    reportedListings: reports.filter(r => r.status === 'Pending Review').length,
+    rejectedProperties: properties.filter(p => p.status === 'Rejected').length,
+    totalProperties: properties.length,
     pendingLandlords: landlords.filter(l => l.status === 'Pending').length,
     verifiedLandlords: landlords.filter(l => l.status === 'Verified').length
   }
@@ -206,15 +277,14 @@ export const AdminProvider = ({ children }) => {
     <AdminContext.Provider value={{
       landlords,
       properties,
-      reports,
-      activities,
+      loading,
       stats,
       approveProperty,
       rejectProperty,
       verifyLandlord,
       suspendLandlord,
-      resolveReport,
-      dismissReport
+      fetchAllProperties,
+      fetchLandlords
     }}>
       {children}
     </AdminContext.Provider>

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import HeroSection from '../components/HeroSection'
@@ -10,13 +9,13 @@ const LandingPage = () => {
     <div className="min-h-screen">
       <Navbar />
       <HeroSection />
-      
+
       {/* How Can We Help Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-4xl font-bold text-center text-gray-800 mb-12">
           How can we help you?
         </h2>
-        
+
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           <UserTypeCard
             icon={Home}
@@ -25,7 +24,7 @@ const LandingPage = () => {
             link="/student/register"
             gradient="bg-gradient-to-br from-primary-500 to-primary-600"
           />
-          
+
           <UserTypeCard
             icon={Building2}
             title="I want to post my rental property"
@@ -34,7 +33,7 @@ const LandingPage = () => {
             gradient="bg-gradient-to-br from-secondary-500 to-secondary-600"
           />
         </div>
-        
+
         <div className="text-center">
           <Link to="/student/dashboard" className="text-primary-500 hover:text-primary-600 font-semibold underline">
             Skip onboarding
@@ -48,7 +47,7 @@ const LandingPage = () => {
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
             Why Choose Homigo?
           </h2>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-primary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -57,7 +56,7 @@ const LandingPage = () => {
               <h3 className="text-xl font-bold mb-2">Verified Properties</h3>
               <p className="text-gray-600">All properties and landlords are verified for your safety</p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-secondary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-10 h-10 text-secondary-600" />
@@ -65,7 +64,7 @@ const LandingPage = () => {
               <h3 className="text-xl font-bold mb-2">Quality Listings</h3>
               <p className="text-gray-600">Curated selection of student-friendly accommodations</p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-primary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-10 h-10 text-primary-600" />

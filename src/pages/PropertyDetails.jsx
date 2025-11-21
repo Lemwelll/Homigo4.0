@@ -1,24 +1,55 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import PropertyImageGallery from '../components/PropertyImageGallery'
 import { useStudent } from '../context/StudentContext'
 import { useReservation } from '../context/ReservationContext'
 import { useBooking } from '../context/BookingContext'
 import { useAuth } from '../context/AuthContext'
+import { useProperties } from '../context/PropertyContext'
+import { useMessages } from '../context/MessageContext'
 import Toast from '../components/Toast'
 import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock } from 'lucide-react'
-import { dummyProperties } from '../data/dummyProperties'
 
 const PropertyDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { properties, toggleFavorite, isFavorite } = useStudent()
+  const { fetchPropertyById } = useProperties()
   const { createReservation, isPropertyReserved } = useReservation()
   const { isPropertyBooked } = useBooking()
+  const { startConversation } = useMessages()
+  const [property, setProperty] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showReserveModal, setShowReserveModal] = useState(false)
   const [reservationMessage, setReservationMessage] = useState('')
+  const viewTracked = useRef(false)
+
+  // Fetch property from backend and track view
+  useEffect(() => {
+    const loadProperty = async () => {
+      setLoading(true)
+      const fetchedProperty = await fetchPropertyById(id)
+      setProperty(fetchedProperty)
+      setLoading(false)
+
+      // Track property view only once
+      if (!viewTracked.current) {
+        viewTracked.current = true
+        try {
+          await fetch(`http://localhost:5000/activities/track-view/${id}`, {
+            method: 'POST'
+          })
+          console.log('✅ Property view tracked')
+        } catch (error) {
+          console.error('Failed to track view:', error)
+        }
+      }
+    }
+    loadProperty()
+  }, [id])
 
   // Check if user is logged in, if not redirect to login
   useEffect(() => {
@@ -28,9 +59,16 @@ const PropertyDetails = () => {
     }
   }, [user, navigate, id]);
 
-  // Try to find property in dummy data first, then in context
-  const property = dummyProperties.find(p => p.id === parseInt(id)) || 
-                   properties.find(p => p.id === parseInt(id))
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading property details...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!property) {
     return (
@@ -60,14 +98,22 @@ const PropertyDetails = () => {
     setShowReserveModal(true)
   }
 
-  const handleConfirmReservation = () => {
-    createReservation(property, reservationMessage)
+  const handleConfirmReservation = async () => {
+    const result = await createReservation(property, reservationMessage)
     setShowReserveModal(false)
     setReservationMessage('')
-    setToast({
-      message: 'Property reserved! You have 48 hours to complete payment.',
-      type: 'success'
-    })
+    
+    if (result.success) {
+      setToast({
+        message: 'Property reserved! You have 48 hours to complete payment.',
+        type: 'success'
+      })
+    } else {
+      setToast({
+        message: result.error || 'Failed to create reservation',
+        type: 'error'
+      })
+    }
 
     setTimeout(() => {
       navigate('/student/reservations')
@@ -81,6 +127,24 @@ const PropertyDetails = () => {
     }
     // Navigate to secure payment page
     navigate('/student/secure-payment', { state: { property } })
+  }
+
+  const handleMessageLandlord = async () => {
+    if (!property.landlord) {
+      setToast({ message: 'Landlord information not available', type: 'error' })
+      return
+    }
+
+    // Start conversation with landlord
+    await startConversation({
+      id: property.landlord_id,
+      name: property.landlord.name || property.landlordName,
+      email: property.landlord.email || property.landlordEmail,
+      role: 'landlord'
+    }, property.id)
+
+    // Navigate to messages page
+    navigate('/student/messages')
   }
 
   return (
@@ -97,28 +161,11 @@ const PropertyDetails = () => {
         </button>
 
         {/* Image Gallery */}
-        <div className="relative mb-8">
-          <img
-            src={property.image}
-            alt={property.title}
-            className="w-full h-96 object-cover rounded-xl"
-          />
-          {property.verified && (
-            <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-semibold">Verified</span>
-            </div>
-          )}
-          <button
-            onClick={() => toggleFavorite(property.id)}
-            className={`absolute top-4 left-4 p-3 rounded-full transition-all duration-300 shadow-lg ${isFavorite(property.id)
-              ? 'bg-red-500 text-white'
-              : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
-              }`}
-          >
-            <Heart className={`w-6 h-6 ${isFavorite(property.id) ? 'fill-current' : ''}`} />
-          </button>
-        </div>
+        <PropertyImageGallery 
+          property={property}
+          isFavorite={isFavorite(property.id)}
+          onToggleFavorite={() => toggleFavorite(property.id)}
+        />
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -200,7 +247,7 @@ const PropertyDetails = () => {
                 {alreadyBooked ? 'Already Booked' : 'Book Now (Instant)'}
               </button>
               <button
-                onClick={() => navigate('/student/messages')}
+                onClick={handleMessageLandlord}
                 className="btn-secondary w-full flex items-center justify-center space-x-2"
               >
                 <MessageSquare className="w-5 h-5" />
@@ -208,29 +255,31 @@ const PropertyDetails = () => {
               </button>
             </div>
 
-            <div className="card">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Landlord Information</h3>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-600">
-                    {property.landlordName.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h4 className="font-bold text-gray-800">{property.landlordName}</h4>
-                    {property.verified && (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    )}
+            {property.landlord && (
+              <div className="card">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Landlord Information</h3>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-600">
+                      {property.landlord.name?.charAt(0) || 'L'}
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600">Verified Landlord</p>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-gray-800">{property.landlord.name || 'Landlord'}</h4>
+                      {property.verified && (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600">Verified Landlord</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-gray-600">
+                  {property.landlord.phone && <p>📞 {property.landlord.phone}</p>}
+                  {property.landlord.email && <p>📧 {property.landlord.email}</p>}
                 </div>
               </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>📞 {property.landlordPhone}</p>
-                <p>📧 {property.landlordEmail}</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

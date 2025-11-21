@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 
 const EscrowContext = createContext()
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export const useEscrow = () => {
   const context = useContext(EscrowContext)
@@ -11,144 +14,150 @@ export const useEscrow = () => {
 }
 
 export const EscrowProvider = ({ children }) => {
+  const { user } = useAuth()
   const [transactions, setTransactions] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // Initialize with mock data
-  useEffect(() => {
-    const mockTransactions = [
-      {
-        id: 'ESC-2025-001',
-        propertyId: 'PROP-001',
-        propertyTitle: 'Modern Studio near UP Diliman',
-        propertyImage: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
-        studentName: 'Juan Dela Cruz',
-        studentId: 'STU-001',
-        landlordName: 'Maria Santos',
-        landlordId: 'LL-001',
-        amount: 15000,
-        status: 'held',
-        date: '2025-01-10',
-        timeline: [
-          { status: 'paid', date: '2025-01-10', label: 'Payment Initiated' },
-          { status: 'held', date: '2025-01-10', label: 'Held in Escrow' }
-        ]
-      },
-      {
-        id: 'ESC-2025-002',
-        propertyId: 'PROP-002',
-        propertyTitle: 'Cozy Apartment in Taft Avenue',
-        propertyImage: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400',
-        studentName: 'Maria Garcia',
-        studentId: 'STU-002',
-        landlordName: 'Pedro Reyes',
-        landlordId: 'LL-002',
-        amount: 12000,
-        status: 'released',
-        date: '2025-01-05',
-        timeline: [
-          { status: 'paid', date: '2025-01-05', label: 'Payment Initiated' },
-          { status: 'held', date: '2025-01-05', label: 'Held in Escrow' },
-          { status: 'released', date: '2025-01-08', label: 'Released to Landlord' }
-        ]
-      },
-      {
-        id: 'ESC-2025-003',
-        propertyId: 'PROP-003',
-        propertyTitle: 'Spacious Room in Katipunan',
-        propertyImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400',
-        studentName: 'Carlos Mendoza',
-        studentId: 'STU-003',
-        landlordName: 'Ana Lopez',
-        landlordId: 'LL-003',
-        amount: 18000,
-        status: 'pending',
-        date: '2025-01-12',
-        timeline: [
-          { status: 'pending', date: '2025-01-12', label: 'Payment Pending' }
-        ]
-      },
-      {
-        id: 'ESC-2025-004',
-        propertyId: 'PROP-004',
-        propertyTitle: 'Budget-Friendly Dorm in España',
-        propertyImage: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=400',
-        studentName: 'Sofia Ramos',
-        studentId: 'STU-004',
-        landlordName: 'Roberto Cruz',
-        landlordId: 'LL-004',
-        amount: 8000,
-        status: 'refunded',
-        date: '2025-01-03',
-        timeline: [
-          { status: 'paid', date: '2025-01-03', label: 'Payment Initiated' },
-          { status: 'held', date: '2025-01-03', label: 'Held in Escrow' },
-          { status: 'refunded', date: '2025-01-06', label: 'Refunded to Student' }
-        ]
+  // Get JWT token
+  const getToken = () => {
+    return localStorage.getItem('homigo_token')
+  }
+
+  // Fetch escrow transactions from API
+  const fetchEscrowTransactions = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = getToken()
+      
+      if (!token) {
+        console.log('No token found for escrow')
+        setTransactions([])
+        return
       }
-    ]
 
-    const stored = localStorage.getItem('escrowTransactions')
-    if (stored) {
-      setTransactions(JSON.parse(stored))
-    } else {
-      setTransactions(mockTransactions)
-      localStorage.setItem('escrowTransactions', JSON.stringify(mockTransactions))
-    }
-  }, [])
-
-  // Save to localStorage whenever transactions change
-  useEffect(() => {
-    if (transactions.length > 0) {
-      localStorage.setItem('escrowTransactions', JSON.stringify(transactions))
-    }
-  }, [transactions])
-
-  const updateTransactionStatus = (transactionId, newStatus) => {
-    setTransactions(prev => prev.map(transaction => {
-      if (transaction.id === transactionId) {
-        const updatedTimeline = [...transaction.timeline]
-        const statusLabel = {
-          pending: 'Payment Pending',
-          held: 'Held in Escrow',
-          released: 'Released to Landlord',
-          refunded: 'Refunded to Student'
+      // Use different endpoint based on user role
+      const endpoint = user?.role === 'student' ? '/escrow/student' : '/escrow/landlord'
+      
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        
-        updatedTimeline.push({
-          status: newStatus,
-          date: new Date().toISOString().split('T')[0],
-          label: statusLabel[newStatus]
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformed = data.data.map(escrow => {
+          console.log('🔍 Escrow booking data:', escrow.bookings)
+          console.log('🔍 Payment type:', escrow.bookings?.payment_type)
+          console.log('🔍 Remaining balance:', escrow.bookings?.remaining_balance)
+          
+          return {
+            id: escrow.id,
+            bookingId: escrow.booking_id,
+            propertyId: escrow.property_id,
+            propertyTitle: escrow.properties?.title || 'Property',
+            propertyImage: escrow.properties?.property_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
+            propertyLocation: escrow.properties?.location || '',
+            studentName: escrow.users?.full_name || 'Student',
+            studentEmail: escrow.users?.email || '',
+            studentPhone: escrow.users?.phone || '',
+            landlordName: escrow.properties?.users?.full_name || 'Landlord',
+            amount: parseFloat(escrow.amount || 0),
+            paymentType: escrow.bookings?.payment_type || 'full',
+            remainingBalance: parseFloat(escrow.bookings?.remaining_balance || 0),
+            status: escrow.status, // 'held', 'released', 'refunded'
+            createdAt: escrow.created_at,
+            date: new Date(escrow.created_at).toLocaleDateString(),
+            heldDate: escrow.held_date,
+            releasedDate: escrow.released_date,
+            refundedDate: escrow.refunded_date,
+            bookingStatus: escrow.bookings?.status || 'pending',
+            moveInDate: escrow.bookings?.move_in_date,
+            durationMonths: escrow.bookings?.duration_months
+          }
         })
-
-        return {
-          ...transaction,
-          status: newStatus,
-          timeline: updatedTimeline
-        }
+        
+        setTransactions(transformed)
+      } else {
+        setError(data.message)
       }
-      return transaction
-    }))
+    } catch (error) {
+      console.error('Error fetching escrow transactions:', error)
+      setError(error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const getStudentTransactions = (studentId) => {
-    return transactions.filter(t => t.studentId === studentId)
-  }
+  // Fetch escrow transactions on mount and when user changes
+  useEffect(() => {
+    if (user && (user.role === 'landlord' || user.role === 'student')) {
+      fetchEscrowTransactions()
+    }
+  }, [user])
 
+  // Legacy function for backward compatibility with LandlordEscrow page
   const getLandlordTransactions = (landlordId) => {
-    return transactions.filter(t => t.landlordId === landlordId)
+    // Since we already filter by landlord in the API, just return all transactions
+    return transactions
+  }
+
+  // Function for StudentEscrow page
+  const getStudentTransactions = (studentId) => {
+    // Since we already filter by student in the API, just return all transactions
+    return transactions
   }
 
   const getTransactionById = (id) => {
     return transactions.find(t => t.id === id)
   }
 
-  const value = {
-    transactions,
-    updateTransactionStatus,
-    getStudentTransactions,
-    getLandlordTransactions,
-    getTransactionById
+  const getHeldTransactions = () => {
+    return transactions.filter(t => t.status === 'held')
   }
 
-  return <EscrowContext.Provider value={value}>{children}</EscrowContext.Provider>
+  const getReleasedTransactions = () => {
+    return transactions.filter(t => t.status === 'released')
+  }
+
+  const getRefundedTransactions = () => {
+    return transactions.filter(t => t.status === 'refunded')
+  }
+
+  const getTotalHeld = () => {
+    return transactions
+      .filter(t => t.status === 'held')
+      .reduce((sum, t) => sum + t.amount, 0)
+  }
+
+  const getTotalReleased = () => {
+    return transactions
+      .filter(t => t.status === 'released')
+      .reduce((sum, t) => sum + t.amount, 0)
+  }
+
+  const value = {
+    transactions,
+    loading,
+    error,
+    getLandlordTransactions,
+    getStudentTransactions,
+    getTransactionById,
+    getHeldTransactions,
+    getReleasedTransactions,
+    getRefundedTransactions,
+    getTotalHeld,
+    getTotalReleased,
+    fetchEscrowTransactions
+  }
+
+  return (
+    <EscrowContext.Provider value={value}>
+      {children}
+    </EscrowContext.Provider>
+  )
 }

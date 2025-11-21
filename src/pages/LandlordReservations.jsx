@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LandlordRequestCard from '../components/LandlordRequestCard'
+import DeclineReservationModal from '../components/DeclineReservationModal'
 import Toast from '../components/Toast'
 import { useReservation } from '../context/ReservationContext'
 import { Clock, CheckCircle } from 'lucide-react'
@@ -8,6 +9,7 @@ import { Clock, CheckCircle } from 'lucide-react'
 const LandlordReservations = () => {
   const { getLandlordReservations, approveReservation, rejectReservation } = useReservation()
   const [toast, setToast] = useState(null)
+  const [declineModal, setDeclineModal] = useState({ isOpen: false, reservation: null })
 
   const reservations = getLandlordReservations()
   const pendingReservations = reservations.filter(r => r.status === 'reserved')
@@ -19,9 +21,13 @@ const LandlordReservations = () => {
   }
 
   const handleReject = (reservationId) => {
-    const reason = window.prompt('Please provide a reason for declining (optional):')
-    rejectReservation(reservationId, reason || 'Property is no longer available.')
-    setToast({ message: 'Reservation declined', type: 'info' })
+    const reservation = reservations.find(r => r.id === reservationId)
+    setDeclineModal({ isOpen: true, reservation })
+  }
+
+  const handleConfirmDecline = (reason) => {
+    rejectReservation(declineModal.reservation.id, reason)
+    setToast({ message: 'Reservation declined. Student has been notified.', type: 'info' })
   }
 
   return (
@@ -108,6 +114,14 @@ const LandlordReservations = () => {
           </div>
         )}
       </div>
+
+      {/* Decline Reservation Modal */}
+      <DeclineReservationModal
+        isOpen={declineModal.isOpen}
+        onClose={() => setDeclineModal({ isOpen: false, reservation: null })}
+        onConfirm={handleConfirmDecline}
+        reservation={declineModal.reservation}
+      />
 
       {/* Toast Notification */}
       {toast && (

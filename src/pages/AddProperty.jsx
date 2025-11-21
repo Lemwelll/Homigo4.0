@@ -146,38 +146,39 @@ const AddProperty = () => {
     fileInputRef.current?.click()
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Save to localStorage with images
-    const propertyData = {
-      ...formData,
-      images: base64Images,
-      createdAt: new Date().toISOString(),
-      id: Date.now()
+    try {
+      // Prepare property data for backend
+      const propertyData = {
+        title: formData.title,
+        location: formData.location,
+        address: formData.address,
+        price: parseFloat(formData.price),
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        description: formData.description,
+        amenities: formData.amenities,
+        images: base64Images,
+        paymentRules: formData.paymentRules
+      }
+
+      // Send to backend via context
+      await addProperty(propertyData)
+
+      // Clear the draft
+      localStorage.removeItem('homigo_property_draft')
+      
+      setShowSuccess(true)
+      
+      setTimeout(() => {
+        navigate('/landlord/properties')
+      }, 2000)
+    } catch (error) {
+      console.error('Error adding property:', error)
+      alert('Failed to add property. Please try again.')
     }
-
-    // Get existing properties from localStorage
-    const existingProperties = JSON.parse(localStorage.getItem('homigo_temp_properties') || '[]')
-    existingProperties.push(propertyData)
-    localStorage.setItem('homigo_temp_properties', JSON.stringify(existingProperties))
-
-    // Also add to context (for immediate display)
-    addProperty({
-      ...formData,
-      image: base64Images[0] || formData.image
-    })
-
-    // Clear the draft
-    localStorage.removeItem('homigo_property_draft')
-
-    console.log('Property saved with images:', propertyData)
-    
-    setShowSuccess(true)
-    
-    setTimeout(() => {
-      navigate('/landlord/properties')
-    }, 2000)
   }
 
   return (
