@@ -33,8 +33,13 @@ const HOST = '0.0.0.0'; // Bind to all network interfaces for Render
 // ============================================
 
 // CORS Configuration
+// app.use(cors({
+//     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+//     credentials: true
+// }));
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || 'https://homigov5.vercel.app',
     credentials: true
 }));
 
