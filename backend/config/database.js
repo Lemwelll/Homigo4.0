@@ -12,17 +12,25 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-// Validate environment variables
+// Validate environment variables (warn instead of throw to allow server to start)
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase credentials in environment variables');
+  console.warn('⚠️  WARNING: Missing Supabase credentials in environment variables');
+  console.warn('⚠️  Database operations will fail until credentials are provided');
 }
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Create Supabase client (will be null if credentials missing)
+export const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 // Test database connection
 export const testConnection = async () => {
   try {
+    if (!supabase) {
+      console.error('❌ Database client not initialized - missing credentials');
+      return false;
+    }
+    
     const { data, error } = await supabase
       .from('users')
       .select('count')
