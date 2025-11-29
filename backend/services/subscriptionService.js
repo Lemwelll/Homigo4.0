@@ -118,7 +118,32 @@ export const upgradeToPremium = async (userId, paymentData) => {
 
     console.log('✅ Payment transaction created:', paymentTransaction.id);
 
-    // 2. Update user's subscription
+    // 2. Create/Update subscription in subscriptions table
+    console.log('🔄 Creating subscription record...');
+    
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: userId,
+        tier: 'premium',
+        status: 'active',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (subscriptionError) {
+      console.error('❌ Subscription creation error:', subscriptionError);
+      throw new Error('Failed to create subscription: ' + subscriptionError.message);
+    }
+
+    console.log('✅ Subscription created in subscriptions table:', subscription.id);
+
+    // 3. Also update users table for backward compatibility
     const { data: user, error: updateError } = await supabase
       .from('users')
       .update({
@@ -132,11 +157,11 @@ export const upgradeToPremium = async (userId, paymentData) => {
       .single();
 
     if (updateError) {
-      console.error('❌ User update error:', updateError);
-      throw new Error('Failed to update user subscription: ' + updateError.message);
+      console.error('⚠️ User update error (non-critical):', updateError);
+      // Don't throw - subscriptions table is the source of truth
+    } else {
+      console.log('✅ User table also updated for backward compatibility');
     }
-
-    console.log('✅ User subscription updated to premium');
 
     // 3. Record in subscription history
     const { error: historyError } = await supabase
@@ -177,7 +202,39 @@ export const upgradeToPremium = async (userId, paymentData) => {
  */
 export const cancelSubscription = async (userId) => {
   try {
-    // Update user's subscription
+    console.log('🔄 Cancelling subscription for user:', userId);
+    
+    // 1. Update subscription in subscriptions table
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        end_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .select()
+      .maybeSingle(); // Use maybeSingle() to handle 0 or 1 rows
+
+    if (subscriptionError) {
+      console.error('❌ Subscription cancellation error:', subscriptionError);
+      throw new Error('Failed to cancel subscription: ' + subscriptionError.message);
+    }
+
+    if (!subscription) {
+      console.log('⚠️ No active subscription found to cancel');
+      // Return a default response instead of erroring
+      return {
+        tier: 'free',
+        status: 'cancelled',
+        message: 'No active subscription found'
+      };
+    }
+
+    console.log('✅ Subscription cancelled in subscriptions table');
+
+    // 2. Also update users table for backward compatibility
     const { data: user, error: updateError } = await supabase
       .from('users')
       .update({
@@ -187,9 +244,14 @@ export const cancelSubscription = async (userId) => {
       })
       .eq('id', userId)
       .select()
-      .single();
+      .maybeSingle(); // Use maybeSingle() here too
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('⚠️ User update error (non-critical):', updateError);
+      // Don't throw - subscriptions table is the source of truth
+    } else {
+      console.log('✅ User table also updated for backward compatibility');
+    }
 
     // Record in subscription history
     const { error: historyError } = await supabase

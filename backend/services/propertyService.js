@@ -416,7 +416,7 @@ export const getVerifiedProperties = async (limit = 50, offset = 0) => {
     const propertyIds = properties.map(p => p.id);
     const landlordIds = [...new Set(properties.map(p => p.landlord_id))];
 
-    const [imagesResult, amenitiesResult, landlordsResult] = await Promise.all([
+    const [imagesResult, amenitiesResult, landlordsResult, bookingsResult, escrowPaymentsResult, escrowTransactionsResult] = await Promise.all([
       supabase
         .from('property_images')
         .select('property_id, image_url, is_primary, display_order')
@@ -429,16 +429,81 @@ export const getVerifiedProperties = async (limit = 50, offset = 0) => {
       supabase
         .from('users')
         .select('id, full_name, phone')
-        .in('id', landlordIds)
+        .in('id', landlordIds),
+      // Check for approved/active bookings (property is rented/booked)
+      supabase
+        .from('bookings')
+        .select('property_id, status')
+        .in('property_id', propertyIds)
+        .in('status', ['approved', 'active', 'completed']),
+      // Check for released escrow payments (property is rented) - escrow_payments table
+      supabase
+        .from('escrow_payments')
+        .select('property_id, status')
+        .in('property_id', propertyIds)
+        .eq('status', 'released'),
+      // Check for released escrow transactions (property is rented) - escrow_transactions table
+      supabase
+        .from('escrow_transactions')
+        .select('property_id, status')
+        .in('property_id', propertyIds)
+        .eq('status', 'released')
     ]);
 
+    // Debug logging
+    console.log('🔍 DEBUG: Checking escrow payments...');
+    console.log('Property IDs:', propertyIds);
+    console.log('Escrow Payments Result:', JSON.stringify(escrowPaymentsResult.data, null, 2));
+    console.log('Escrow Transactions Result:', JSON.stringify(escrowTransactionsResult.data, null, 2));
+    console.log('Bookings Result:', JSON.stringify(bookingsResult.data, null, 2));
+
     // Combine data efficiently
-    return properties.map(prop => ({
-      ...prop,
-      property_images: imagesResult.data?.filter(img => img.property_id === prop.id) || [],
-      property_amenities: amenitiesResult.data?.filter(a => a.property_id === prop.id) || [],
-      users: landlordsResult.data?.find(u => u.id === prop.landlord_id) || null
-    }));
+    const result = properties.map(prop => {
+      // Check if property has an approved/active booking (is booked/rented)
+      const hasApprovedBooking = bookingsResult.data?.some(
+        booking => booking.property_id === prop.id && 
+        (booking.status === 'approved' || booking.status === 'active' || booking.status === 'completed')
+      );
+
+      // Check if property has released escrow payment (is rented) - check BOTH tables
+      const hasReleasedEscrowPayment = escrowPaymentsResult.data?.some(
+        escrow => escrow.property_id === prop.id && escrow.status === 'released'
+      );
+      
+      const hasReleasedEscrowTransaction = escrowTransactionsResult.data?.some(
+        escrow => escrow.property_id === prop.id && escrow.status === 'released'
+      );
+
+      const hasReleasedEscrow = hasReleasedEscrowPayment || hasReleasedEscrowTransaction;
+      
+      // Property is unavailable if it has an approved booking OR released escrow
+      const isUnavailable = hasApprovedBooking || hasReleasedEscrow;
+
+      console.log(`🏠 Property "${prop.title}" (ID: ${prop.id}):`, {
+        hasApprovedBooking,
+        hasReleasedEscrowPayment,
+        hasReleasedEscrowTransaction,
+        hasReleasedEscrow,
+        isUnavailable
+      });
+
+      if (isUnavailable) {
+        const reason = hasApprovedBooking ? 'approved booking' : 'released escrow payment';
+        console.log(`🚫 Property "${prop.title}" is UNAVAILABLE (has ${reason})`);
+      }
+
+      return {
+        ...prop,
+        property_images: imagesResult.data?.filter(img => img.property_id === prop.id) || [],
+        property_amenities: amenitiesResult.data?.filter(a => a.property_id === prop.id) || [],
+        users: landlordsResult.data?.find(u => u.id === prop.landlord_id) || null,
+        isRented: isUnavailable || false // Keep isRented for backward compatibility
+      };
+    });
+
+    console.log(`📊 Fetched ${result.length} properties, ${result.filter(p => p.isRented).length} are unavailable/booked`);
+    
+    return result;
 
   } catch (error) {
     console.error('Get verified properties error:', error);

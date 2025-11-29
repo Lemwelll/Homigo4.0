@@ -33,4 +33,18 @@ router.get('/student', escrowController.getStudentEscrow);
  */
 router.get('/booking/:bookingId', escrowController.getEscrowByBookingId);
 
+/**
+ * @route   POST /escrow/:escrowId/accept
+ * @desc    Accept payment and release escrow to landlord
+ * @access  Private (Landlord)
+ */
+router.post('/:escrowId/accept', escrowController.acceptPayment);
+
+/**
+ * @route   POST /escrow/:escrowId/decline
+ * @desc    Decline payment and refund escrow to student
+ * @access  Private (Landlord)
+ */
+router.post('/:escrowId/decline', escrowController.declinePayment);
+
 export default router;

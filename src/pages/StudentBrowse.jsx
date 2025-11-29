@@ -132,16 +132,31 @@ const StudentBrowse = () => {
             {filteredProperties.map((property) => (
               <div
                 key={property.id}
-                className="card p-0 overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 relative group"
+                className={`card p-0 overflow-hidden cursor-pointer transform hover:scale-105 transition-all duration-300 relative group ${property.isRented ? 'opacity-75' : ''}`}
               >
                 <div className="relative">
                   <img
                     src={property.image}
                     alt={property.title}
-                    className="w-full h-48 object-cover"
+                    className={`w-full h-48 object-cover ${property.isRented ? 'grayscale' : ''}`}
                     onClick={() => navigate(`/property/${property.id}`)}
                   />
-                  {property.verified && (
+                  
+                  {/* Darken overlay if property is rented */}
+                  {property.isRented && (
+                    <div className="absolute inset-0 bg-gray-900 bg-opacity-60 z-20"></div>
+                  )}
+                  
+                  {/* NOT AVAILABLE badge for rented properties */}
+                  {property.isRented && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
+                      <div className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl border-2 border-white">
+                        NOT AVAILABLE
+                      </div>
+                    </div>
+                  )}
+                  
+                  {property.verified && !property.isRented && (
                     <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg animate-pulse z-20">
                       <CheckCircle className="w-3 h-3 fill-current" />
                       <span>VERIFIED</span>
@@ -149,25 +164,29 @@ const StudentBrowse = () => {
                   )}
                   <button
                     onClick={(e) => handleFavoriteClick(e, property.id)}
-                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 ${isFavorite(property.id)
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+                    disabled={property.isRented}
+                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 z-20 ${
+                      property.isRented 
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                        : isFavorite(property.id)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
                       }`}
                   >
                     <Heart className={`w-5 h-5 ${isFavorite(property.id) ? 'fill-current' : ''}`} />
                   </button>
-                  <div className="absolute bottom-3 left-3 bg-primary-500 text-white px-4 py-2 rounded-lg font-bold">
+                  <div className={`absolute bottom-3 left-3 px-4 py-2 rounded-lg font-bold z-20 ${property.isRented ? 'bg-gray-500' : 'bg-primary-500'} text-white`}>
                     ₱{property.price.toLocaleString()}/mo
                   </div>
                 </div>
-                <div className="p-5" onClick={() => navigate(`/property/${property.id}`)}>
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">{property.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{property.location}</p>
-                  <div className="flex items-center justify-between text-sm text-gray-600">
+                <div className={`p-5 ${property.isRented ? 'bg-gray-100' : ''}`} onClick={() => navigate(`/property/${property.id}`)}>
+                  <h3 className={`text-lg font-bold mb-1 ${property.isRented ? 'text-gray-500' : 'text-gray-800'}`}>{property.title}</h3>
+                  <p className={`text-sm mb-3 ${property.isRented ? 'text-gray-400' : 'text-gray-600'}`}>{property.location}</p>
+                  <div className={`flex items-center justify-between text-sm ${property.isRented ? 'text-gray-400' : 'text-gray-600'}`}>
                     <span>{property.bedrooms} Bed • {property.bathrooms} Bath</span>
                   </div>
-                  <button className="mt-4 w-full btn-primary text-sm py-2">
-                    View Details
+                  <button className={`mt-4 w-full text-sm py-2 rounded-lg font-semibold ${property.isRented ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'btn-primary'}`} disabled={property.isRented}>
+                    {property.isRented ? 'Not Available' : 'View Details'}
                   </button>
                 </div>
               </div>

@@ -406,24 +406,24 @@ const PropertyDetails = () => {
 
               <button
                 onClick={handleReserveProperty}
-                disabled={alreadyReserved}
-                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${alreadyReserved
+                disabled={alreadyReserved || property.isRented}
+                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${(alreadyReserved || property.isRented)
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-yellow-500 hover:bg-yellow-600 text-white'
                   }`}
               >
                 <Clock className="w-5 h-5" />
-                {alreadyReserved ? 'Already Reserved' : 'Reserve Property (48h Hold)'}
+                {property.isRented ? 'Property Not Available' : alreadyReserved ? 'Already Reserved' : 'Reserve Property (48h Hold)'}
               </button>
               <button
                 onClick={handleBookNow}
-                disabled={alreadyBooked}
-                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${alreadyBooked
+                disabled={alreadyBooked || property.isRented}
+                className={`w-full mb-3 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${(alreadyBooked || property.isRented)
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'btn-primary'
                   }`}
               >
-                {alreadyBooked ? 'Already Booked' : 'Book Now (Instant)'}
+                {property.isRented ? 'Property Not Available' : alreadyBooked ? 'Already Booked' : 'Book Now (Instant)'}
               </button>
               <button
                 onClick={handleMessageLandlord}

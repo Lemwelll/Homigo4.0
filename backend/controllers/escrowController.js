@@ -83,3 +83,56 @@ export const getStudentEscrow = async (req, res) => {
     });
   }
 };
+
+/**
+ * Accept payment (Release escrow to landlord)
+ * POST /escrow/:escrowId/accept
+ */
+export const acceptPayment = async (req, res) => {
+  try {
+    const { escrowId } = req.params;
+    const landlordId = req.user.userId;
+
+    const result = await escrowService.releaseEscrowById(escrowId, landlordId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment accepted and released successfully',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Accept payment error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to accept payment'
+    });
+  }
+};
+
+/**
+ * Decline payment (Refund escrow to student)
+ * POST /escrow/:escrowId/decline
+ */
+export const declinePayment = async (req, res) => {
+  try {
+    const { escrowId } = req.params;
+    const landlordId = req.user.userId;
+    const { reason } = req.body;
+
+    const result = await escrowService.refundEscrowById(escrowId, landlordId, reason);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment declined and refunded successfully',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Decline payment error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to decline payment'
+    });
+  }
+};

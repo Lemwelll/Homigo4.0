@@ -1,7 +1,10 @@
-import { X, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { X, CheckCircle, Clock, AlertCircle, Check, XCircle } from 'lucide-react'
+import { useState } from 'react'
 import PaymentStatusBadge from './PaymentStatusBadge'
 
-const PaymentDetailsModal = ({ transaction, onClose, userType }) => {
+const PaymentDetailsModal = ({ transaction, onClose, userType, onAccept, onDecline }) => {
+  const [isProcessing, setIsProcessing] = useState(false)
+  
   if (!transaction) return null
 
   // Generate timeline from transaction data if not provided
@@ -171,23 +174,54 @@ const PaymentDetailsModal = ({ transaction, onClose, userType }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
-            <button
-              disabled
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
-            >
-              Request Refund
-            </button>
-            <button
-              disabled
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
-            >
-              Contact Support
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 text-center">
-            Action buttons will be enabled in future updates
-          </p>
+          {userType === 'landlord' && transaction.status === 'held' && onAccept && onDecline ? (
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={async () => {
+                  setIsProcessing(true)
+                  await onAccept(transaction.id)
+                  setIsProcessing(false)
+                }}
+                disabled={isProcessing}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+              >
+                <Check className="w-5 h-5" />
+                {isProcessing ? 'Processing...' : 'Accept Payment'}
+              </button>
+              <button
+                onClick={async () => {
+                  setIsProcessing(true)
+                  await onDecline(transaction.id)
+                  setIsProcessing(false)
+                }}
+                disabled={isProcessing}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+                {isProcessing ? 'Processing...' : 'Decline Payment'}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  disabled
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
+                >
+                  Request Refund
+                </button>
+                <button
+                  disabled
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
+                >
+                  Contact Support
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 text-center">
+                Action buttons will be enabled in future updates
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

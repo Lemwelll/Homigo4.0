@@ -119,6 +119,7 @@ export const StudentProvider = ({ children }) => {
             bedrooms: prop.bedrooms,
             bathrooms: prop.bathrooms,
             verified: isVerified,
+            isRented: prop.isRented || false, // Use backend data directly
             image: allImages[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500',
             images: allImages.length > 0 ? allImages : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'],
             description: prop.description,

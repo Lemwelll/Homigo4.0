@@ -5,13 +5,15 @@ import EscrowSummaryCard from '../components/EscrowSummaryCard'
 import FilterBar from '../components/FilterBar'
 import EscrowTable from '../components/EscrowTable'
 import PaymentDetailsModal from '../components/PaymentDetailsModal'
+import NotificationToast from '../components/NotificationToast'
 import { useEscrow } from '../context/EscrowContext'
 
 const LandlordEscrow = () => {
-  const { getLandlordTransactions } = useEscrow()
+  const { getLandlordTransactions, refreshTransactions } = useEscrow()
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [notification, setNotification] = useState(null)
 
   // Mock landlord ID - in real app, get from auth context
   const landlordId = 'LL-001'
@@ -70,8 +72,109 @@ const LandlordEscrow = () => {
     { label: 'Released', value: 'released' }
   ]
 
+  // Handle Accept Payment
+  const handleAcceptPayment = async (escrowId) => {
+    try {
+      const token = localStorage.getItem('homigo_token')
+      const response = await fetch(`http://localhost:5000/escrow/${escrowId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setNotification({
+          type: 'success',
+          message: 'Payment accepted successfully! The payment has been released to you.'
+        })
+        setTimeout(() => setNotification(null), 5000)
+        setSelectedTransaction(null)
+        // Refresh transactions if the context provides this method
+        if (refreshTransactions) {
+          refreshTransactions()
+        }
+      } else {
+        throw new Error(data.message || 'Failed to accept payment')
+      }
+    } catch (error) {
+      console.error('Error accepting payment:', error)
+      setNotification({
+        type: 'error',
+        message: error.message
+      })
+      setTimeout(() => setNotification(null), 5000)
+      // Close modal and refresh to show current status
+      setSelectedTransaction(null)
+      if (refreshTransactions) {
+        refreshTransactions()
+      }
+    }
+  }
+
+  // Handle Decline Payment
+  const handleDeclinePayment = async (escrowId) => {
+    const reason = prompt('Please provide a reason for declining this payment:')
+    if (!reason) {
+      return // User cancelled
+    }
+
+    try {
+      const token = localStorage.getItem('homigo_token')
+      const response = await fetch(`http://localhost:5000/escrow/${escrowId}/decline`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setNotification({
+          type: 'success',
+          message: 'Payment declined successfully! The payment has been refunded to the student.'
+        })
+        setTimeout(() => setNotification(null), 5000)
+        setSelectedTransaction(null)
+        // Refresh transactions if the context provides this method
+        if (refreshTransactions) {
+          refreshTransactions()
+        }
+      } else {
+        throw new Error(data.message || 'Failed to decline payment')
+      }
+    } catch (error) {
+      console.error('Error declining payment:', error)
+      setNotification({
+        type: 'error',
+        message: error.message
+      })
+      setTimeout(() => setNotification(null), 5000)
+      // Close modal and refresh to show current status
+      setSelectedTransaction(null)
+      if (refreshTransactions) {
+        refreshTransactions()
+      }
+    }
+  }
+
   return (
     <DashboardLayout userType="landlord">
+      {/* Notification Toast */}
+      {notification && (
+        <NotificationToast
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -133,6 +236,8 @@ const LandlordEscrow = () => {
             transaction={selectedTransaction}
             onClose={() => setSelectedTransaction(null)}
             userType="landlord"
+            onAccept={handleAcceptPayment}
+            onDecline={handleDeclinePayment}
           />
         )}
       </div>

@@ -35,7 +35,8 @@ const PublicListings = () => {
           type: `${prop.bedrooms} Bedroom, ${prop.bathrooms} Bathroom`,
           photos: prop.property_images?.map(img => img.image_url) || ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'],
           amenities: prop.property_amenities?.map(a => a.amenity_name) || [],
-          description: prop.description
+          description: prop.description,
+          isRented: prop.isRented || false // Include isRented from backend
         }));
         
         setAllProperties(transformedProperties);
@@ -198,11 +199,20 @@ const PublicListings = () => {
                   <img
                     src={property.photos[0]}
                     alt={property.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 ${property.isRented ? 'opacity-50' : ''}`}
                   />
-                  <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-gray-900">
-                    ₱{property.price.toLocaleString()}/mo
-                  </div>
+                  {property.isRented && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                      <div className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                        NOT AVAILABLE
+                      </div>
+                    </div>
+                  )}
+                  {!property.isRented && (
+                    <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-gray-900">
+                      ₱{property.price.toLocaleString()}/mo
+                    </div>
+                  )}
                 </div>
                 
                 <div className="p-4">
