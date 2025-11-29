@@ -26,12 +26,15 @@ export const AccountTierProvider = ({ children }) => {
   // Fetch subscription status from backend
   const fetchSubscriptionStatus = async () => {
     if (!user) {
+      console.log('🔍 AccountTier: No user, setting to free');
       setAccountState(prev => ({ ...prev, tier: 'free', loading: false }));
       return;
     }
 
     try {
       const token = localStorage.getItem('homigo_token');
+      console.log('🔍 AccountTier: Fetching subscription status for user:', user.id);
+      
       const response = await fetch(`${API_URL}/subscriptions/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -39,18 +42,22 @@ export const AccountTierProvider = ({ children }) => {
       });
 
       const data = await response.json();
+      console.log('🔍 AccountTier: Response:', data);
       
       if (data.success) {
+        const tier = data.data.tier || 'free';
+        console.log('✅ AccountTier: Setting tier to:', tier);
         setAccountState(prev => ({
           ...prev,
-          tier: data.data.tier || 'free',
+          tier: tier,
           loading: false
         }));
       } else {
+        console.log('⚠️ AccountTier: API returned success=false, defaulting to free');
         setAccountState(prev => ({ ...prev, tier: 'free', loading: false }));
       }
     } catch (error) {
-      console.error('Failed to fetch subscription status:', error);
+      console.error('❌ AccountTier: Failed to fetch subscription status:', error);
       setAccountState(prev => ({ ...prev, tier: 'free', loading: false }));
     }
   };
@@ -197,6 +204,7 @@ export const AccountTierProvider = ({ children }) => {
     accountState,
     upgradeToPremium,
     downgradeToFree,
+    fetchSubscriptionStatus,
     incrementStudentFavorites,
     decrementStudentFavorites,
     incrementStudentReservations,

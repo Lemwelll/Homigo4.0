@@ -11,6 +11,8 @@ import { supabase } from '../config/database.js';
 export const createProperty = async (propertyData, landlordId) => {
   try {
     // Check user's subscription tier
+    console.log('🔍 PropertyService: Checking subscription for landlord:', landlordId);
+    
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .select('tier, status')
@@ -18,13 +20,27 @@ export const createProperty = async (propertyData, landlordId) => {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no rows
+
+    // Log subscription check result
+    if (subError) {
+      console.error('❌ PropertyService: Error checking subscription:', subError);
+    }
+    
+    if (subscription) {
+      console.log('✅ PropertyService: Found subscription:', subscription.tier);
+    } else {
+      console.log('⚠️ PropertyService: No active subscription found, defaulting to free');
+    }
 
     // Default to free tier if no active subscription found
     const userTier = subscription?.tier || 'free';
+    console.log('🎯 PropertyService: User tier:', userTier);
 
     // Check tier limits - Free tier: max 3 property listings, Premium: unlimited
     if (userTier === 'free') {
+      console.log('🔍 PropertyService: Checking property count for free tier...');
+      
       const { data: existingProperties, error: countError } = await supabase
         .from('properties')
         .select('id', { count: 'exact', head: false })
@@ -32,12 +48,20 @@ export const createProperty = async (propertyData, landlordId) => {
 
       if (countError) throw countError;
 
+      const propertyCount = existingProperties?.length || 0;
       const FREE_LISTING_LIMIT = 3;
+      
+      console.log(`📊 PropertyService: Current properties: ${propertyCount}/${FREE_LISTING_LIMIT}`);
 
       // Enforce free tier limit
-      if (existingProperties && existingProperties.length >= FREE_LISTING_LIMIT) {
+      if (propertyCount >= FREE_LISTING_LIMIT) {
+        console.log('❌ PropertyService: Free tier limit reached');
         throw new Error(`Free tier limit reached. You can only have ${FREE_LISTING_LIMIT} property listings. Upgrade to premium for unlimited listings.`);
       }
+      
+      console.log('✅ PropertyService: Within free tier limit, proceeding...');
+    } else {
+      console.log('✅ PropertyService: Premium user, no limit check needed');
     }
     // Premium users have unlimited listings - no check needed
 

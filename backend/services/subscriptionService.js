@@ -10,23 +10,66 @@ import { supabase } from '../config/database.js';
  */
 export const getUserSubscription = async (userId) => {
   try {
-    const { data, error } = await supabase
+    // Check subscriptions table first
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('tier, status, start_date, end_date')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // If subscription found in subscriptions table, return it
+    if (subscription && !subError) {
+      console.log('✅ Found active subscription:', subscription);
+      return {
+        tier: subscription.tier || 'free',
+        startDate: subscription.start_date,
+        endDate: subscription.end_date,
+        status: subscription.status || 'active'
+      };
+    }
+
+    // Fallback: Check users table for legacy subscription data
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('subscription_tier, subscription_start_date, subscription_end_date, subscription_status')
       .eq('id', userId)
       .single();
 
-    if (error) throw error;
+    if (userError && userError.code !== 'PGRST116') {
+      throw userError;
+    }
 
+    // Return user data or default to free
+    if (userData && userData.subscription_tier) {
+      console.log('✅ Found subscription in users table:', userData.subscription_tier);
+      return {
+        tier: userData.subscription_tier || 'free',
+        startDate: userData.subscription_start_date,
+        endDate: userData.subscription_end_date,
+        status: userData.subscription_status || 'active'
+      };
+    }
+
+    // Default to free tier
+    console.log('ℹ️ No subscription found, defaulting to free');
     return {
-      tier: data.subscription_tier || 'free',
-      startDate: data.subscription_start_date,
-      endDate: data.subscription_end_date,
-      status: data.subscription_status || 'active'
+      tier: 'free',
+      startDate: null,
+      endDate: null,
+      status: 'active'
     };
   } catch (error) {
     console.error('Get subscription error:', error);
-    throw error;
+    // Return free tier on error instead of throwing
+    return {
+      tier: 'free',
+      startDate: null,
+      endDate: null,
+      status: 'active'
+    };
   }
 };
 

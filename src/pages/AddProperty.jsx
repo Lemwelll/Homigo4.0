@@ -583,7 +583,7 @@ const AddProperty = () => {
                     <span>Advanced analytics & insights</span>
                   </li>
                 </ul>
-                <p className="text-2xl font-bold text-secondary-900 mt-4">₱299/month</p>
+                <p className="text-2xl font-bold text-secondary-900 mt-4">₱199/month</p>
               </div>
 
               <div className="flex gap-3">
