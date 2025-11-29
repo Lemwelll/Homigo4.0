@@ -6,6 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/jpeg" href="/assets/Logo.png" />
   <title>Homigo</title>
+
+  <!-- Suppress 404 errors in console -->
+  <script>
+    // Suppress 404 errors from browser extensions or missing resources
+    const originalFetch = window.fetch;
+    window.fetch = function (...args) {
+      return originalFetch.apply(this, args).catch(error => {
+        // Silently handle 404s for non-critical resources
+        if (error.message && error.message.includes('404')) {
+          return Promise.resolve(new Response(null, { status: 404 }));
+        }
+        throw error;
+      });
+    };
+  </script>
 </head>
 
 <body>
