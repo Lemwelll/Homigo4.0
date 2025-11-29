@@ -9,6 +9,7 @@ import {
   Download,
   RefreshCw
 } from 'lucide-react';
+import API_URL from '../config/api';
 
 const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -42,8 +43,6 @@ const AdminAnalytics = () => {
         setLoading(false);
         return;
       }
-
-      const API_URL = import.meta.env.VITE_API_URL || 'https://homigo-backend.onrender.com';
       
       console.log('Fetching analytics from:', `${API_URL}/admin/dashboard`);
       console.log('Date range:', dateRange);
@@ -83,7 +82,6 @@ const AdminAnalytics = () => {
   const exportReport = async (type) => {
     try {
       const token = localStorage.getItem('homigo_token');
-      const API_URL = import.meta.env.VITE_API_URL || 'https://homigo-backend.onrender.com';
       const response = await fetch(
         `${API_URL}/reports/export?type=${type}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
         {

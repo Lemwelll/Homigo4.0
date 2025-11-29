@@ -3,6 +3,7 @@ import AdminLayout from '../components/AdminLayout'
 import StatusBadge from '../components/StatusBadge'
 import { useAdmin } from '../context/AdminContext'
 import { CheckCircle, Ban, Eye, Search, Mail, Phone, X, User, FileText, Download } from 'lucide-react'
+import API_URL from '../config/api'
 
 
 const AdminLandlords = () => {

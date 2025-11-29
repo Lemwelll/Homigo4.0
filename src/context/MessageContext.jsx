@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
+import API_URL from '../config/api'
 
 const MessageContext = createContext()
 

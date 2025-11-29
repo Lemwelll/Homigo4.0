@@ -49,7 +49,6 @@ const PropertyDetails = () => {
       if (!viewTracked.current) {
         viewTracked.current = true
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
           await fetch(`${API_URL}/activities/track-view/${id}`, {
             method: 'POST'
           })
@@ -70,7 +69,6 @@ const PropertyDetails = () => {
       setLoadingLandmarks(true)
       try {
         // Fetch landmarks filtered by city (Musuan, Bukidnon)
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
         const response = await fetch(`${API_URL}/landmarks?city=Musuan`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

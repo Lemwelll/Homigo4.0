@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import { useAuth } from '../context/AuthContext'
 import { CreditCard, Plus, Trash2, Check, X } from 'lucide-react'
 import Toast from '../components/Toast'
+import API_URL from '../config/api'
 
 
 const PaymentMethods = () => {

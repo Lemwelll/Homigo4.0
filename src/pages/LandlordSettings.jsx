@@ -3,6 +3,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Phone, Lock, Save, CheckCircle, Building2, MapPin, CreditCard, FileText, Upload, X, Eye, Crown, AlertTriangle } from 'lucide-react'
+import API_URL from '../config/api'
 
 
 const LandlordSettings = () => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import { useAccountTier } from '../context/AccountTierContext'
 import { MapPin, Droplet, Printer, Store, Crown, Lock } from 'lucide-react'
+import API_URL from '../config/api'
 
 
 const LandmarksMap = () => {

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from './AuthContext'
+import API_URL from '../config/api'
 
 const BookingContext = createContext()
 
@@ -10,8 +11,6 @@ export const useBooking = () => {
   }
   return context
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export const BookingProvider = ({ children }) => {
   const { user } = useAuth()

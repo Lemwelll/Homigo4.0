@@ -77,7 +77,6 @@ const LandlordEscrow = () => {
   const handleAcceptPayment = async (escrowId) => {
     try {
       const token = localStorage.getItem('homigo_token')
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
       const response = await fetch(`${API_URL}/escrow/${escrowId}/accept`, {
         method: 'POST',
         headers: {
@@ -126,7 +125,6 @@ const LandlordEscrow = () => {
 
     try {
       const token = localStorage.getItem('homigo_token')
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
       const response = await fetch(`${API_URL}/escrow/${escrowId}/decline`, {
         method: 'POST',
         headers: {
