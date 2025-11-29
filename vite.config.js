@@ -9,5 +9,13 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
+    sourcemap: false
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom']
+  }
 })
