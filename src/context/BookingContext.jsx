@@ -50,18 +50,7 @@ export const BookingProvider = ({ children }) => {
         return
       }
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-
-      const response = await fetch(`${API_URL}/bookings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
-      const data = await response.json()
+      const data = await ApiClient.get('/bookings')
 
       if (data.success) {
         // Transform backend data - fetch escrow data only for active bookings
@@ -71,16 +60,7 @@ export const BookingProvider = ({ children }) => {
           // Only fetch escrow for confirmed/active bookings to reduce API calls
           if (booking.status === 'confirmed' || booking.status === 'active') {
             try {
-              const escrowController = new AbortController()
-              const escrowTimeoutId = setTimeout(() => escrowController.abort(), 3000)
-              
-              const escrowResponse = await fetch(`${API_URL}/escrow/booking/${booking.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-                signal: escrowController.signal
-              });
-              
-              clearTimeout(escrowTimeoutId)
-              const escrowData = await escrowResponse.json();
+              const escrowData = await ApiClient.get(`/escrow/booking/${booking.id}`);
               
               if (escrowData.success && escrowData.data) {
                 escrowStatus = {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import API_URL from '../config/api'
+import ApiClient from '../utils/apiClient'
 
 const MessageContext = createContext()
 
@@ -34,13 +35,7 @@ export const MessageProvider = ({ children }) => {
       
       if (!token) return
 
-      const response = await fetch(`${API_URL}/messages/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      const data = await response.json()
+      const data = await ApiClient.get('/messages/conversations')
 
       if (data.success) {
         setConversations(data.data)
@@ -63,13 +58,7 @@ export const MessageProvider = ({ children }) => {
         return
       }
 
-      const response = await fetch(`${API_URL}/messages/${partnerId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      const data = await response.json()
+      const data = await ApiClient.get(`/messages/${partnerId}`)
 
       if (data.success) {
         setMessages(data.data)
@@ -96,25 +85,17 @@ export const MessageProvider = ({ children }) => {
         throw new Error('Receiver ID and message are required')
       }
 
-      const response = await fetch(`${API_URL}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          receiver_id: receiverId,
-          message: message.trim(),
-          property_id: propertyId
-        })
+      const data = await ApiClient.post('/messages', {
+        receiver_id: receiverId,
+        message: message.trim(),
+        property_id: propertyId
       })
-
-      const data = await response.json()
 
       if (data.success) {
         // Add message to current messages
         setMessages(prev => [...prev, data.data])
-        // Refresh conversations
+        // Clear cache and refresh conversations
+        ApiClient.clearCache('/messages')
         await fetchConversations()
         return data.data
       } else {
@@ -133,14 +114,10 @@ export const MessageProvider = ({ children }) => {
       
       if (!token) return
 
-      await fetch(`${API_URL}/messages/read/${partnerId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      await ApiClient.put(`/messages/read/${partnerId}`, {})
 
-      // Refresh conversations to update unread count
+      // Clear cache and refresh conversations to update unread count
+      ApiClient.clearCache('/messages')
       await fetchConversations()
       await fetchUnreadCount()
     } catch (error) {
@@ -155,13 +132,7 @@ export const MessageProvider = ({ children }) => {
       
       if (!token) return
 
-      const response = await fetch(`${API_URL}/messages/unread/count`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      const data = await response.json()
+      const data = await ApiClient.get('/messages/unread/count')
 
       if (data.success) {
         setUnreadCount(data.data.count)

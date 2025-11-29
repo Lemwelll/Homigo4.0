@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import API_URL from '../config/api'
+import ApiClient from '../utils/apiClient'
 
 const NotificationContext = createContext()
 
@@ -32,13 +33,7 @@ export const NotificationProvider = ({ children }) => {
       
       if (!token) return
 
-      const response = await fetch(`${API_URL}/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      const data = await response.json()
+      const data = await ApiClient.get('/notifications')
 
       if (data.success) {
         setNotifications(data.data || [])
@@ -81,12 +76,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const token = getToken()
       
-      await fetch(`${API_URL}/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      await ApiClient.put(`/notifications/${notificationId}/read`, {})
 
       // Update local state
       setNotifications(prev =>
@@ -104,12 +94,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const token = getToken()
       
-      await fetch(`${API_URL}/notifications/read-all`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      await ApiClient.put('/notifications/read-all', {})
 
       // Update local state
       setNotifications(prev =>
@@ -125,12 +110,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const token = getToken()
       
-      await fetch(`${API_URL}/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      await ApiClient.delete(`/notifications/${notificationId}`)
 
       // Update local state
       setNotifications(prev => prev.filter(notif => notif.id !== notificationId))

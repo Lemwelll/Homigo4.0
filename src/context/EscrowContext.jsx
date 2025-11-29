@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import API_URL from '../config/api'
+import ApiClient from '../utils/apiClient'
 
 const EscrowContext = createContext()
 
@@ -39,13 +40,7 @@ export const EscrowProvider = ({ children }) => {
       // Use different endpoint based on user role
       const endpoint = user?.role === 'student' ? '/escrow/student' : '/escrow/landlord'
       
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      const data = await response.json()
+      const data = await ApiClient.get(endpoint)
 
       if (data.success) {
         // Transform backend data to match frontend format
