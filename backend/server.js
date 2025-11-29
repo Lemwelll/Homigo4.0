@@ -42,13 +42,24 @@ const HOST = '0.0.0.0'; // Bind to all network interfaces for Render
 // ============================================
 
 // CORS Configuration
-// app.use(cors({
-//     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-//     credentials: true
-// }));
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://homigov5.vercel.app',
+    process.env.FRONTEND_URL
+].filter(Boolean);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://homigov5.vercel.app',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
@@ -136,6 +147,24 @@ app.use('/reports', reportRoutes);
 
 // Property Report routes (User reports about properties)
 app.use('/property-reports', propertyReportRoutes);
+
+// Test endpoint to verify routes are loaded
+app.get('/test-routes', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    availableRoutes: {
+      auth: '/auth',
+      properties: '/properties',
+      bookings: '/bookings',
+      admin: '/admin',
+      reports: '/reports',
+      messages: '/messages',
+      notifications: '/notifications'
+    }
+  });
+});
 
 // ============================================
 // ERROR HANDLING

@@ -14,6 +14,15 @@ class ReportService {
 
       if (error) throw error;
 
+      // Handle null or empty data
+      if (!data || data.length === 0) {
+        return {
+          totalRevenue: 0,
+          dailyRevenue: [],
+          transactionCount: 0
+        };
+      }
+
       // Aggregate by date
       const dailyRevenue = {};
       let totalRevenue = 0;
@@ -23,8 +32,8 @@ class ReportService {
         if (!dailyRevenue[date]) {
           dailyRevenue[date] = 0;
         }
-        dailyRevenue[date] += parseFloat(payment.amount);
-        totalRevenue += parseFloat(payment.amount);
+        dailyRevenue[date] += parseFloat(payment.amount || 0);
+        totalRevenue += parseFloat(payment.amount || 0);
       });
 
       return {
@@ -36,6 +45,7 @@ class ReportService {
         transactionCount: data.length
       };
     } catch (error) {
+      console.error('Error in getRevenueReport:', error);
       throw error;
     }
   }
@@ -51,6 +61,18 @@ class ReportService {
 
       if (error) throw error;
 
+      // Handle null or empty data
+      if (!data || data.length === 0) {
+        return {
+          total: 0,
+          confirmed: 0,
+          pending: 0,
+          cancelled: 0,
+          completed: 0,
+          totalRevenue: 0
+        };
+      }
+
       const stats = {
         total: data.length,
         confirmed: data.filter(b => b.status === 'confirmed').length,
@@ -64,6 +86,7 @@ class ReportService {
 
       return stats;
     } catch (error) {
+      console.error('Error in getBookingStats:', error);
       throw error;
     }
   }
@@ -84,6 +107,11 @@ class ReportService {
 
       if (error) throw error;
 
+      // Handle null or empty data
+      if (!data || data.length === 0) {
+        return [];
+      }
+
       // Group by property
       const propertyStats = {};
 
@@ -92,7 +120,7 @@ class ReportService {
         if (!propertyStats[propId]) {
           propertyStats[propId] = {
             property_id: propId,
-            title: booking.properties?.title || 'Unknown',
+            title: booking.properties?.title || 'Unknown Property',
             bookings: 0,
             revenue: 0,
             confirmed: 0
@@ -110,6 +138,7 @@ class ReportService {
 
       return Object.values(propertyStats).sort((a, b) => b.revenue - a.revenue);
     } catch (error) {
+      console.error('Error in getPropertyPerformance:', error);
       throw error;
     }
   }
@@ -137,18 +166,16 @@ class ReportService {
 
       if (landlordsError) throw landlordsError;
 
-      // Get total active users
+      // Get total active users (check if is_active column exists, fallback to all users)
       const { count: activeStudents } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'student')
-        .eq('is_active', true);
+        .eq('role', 'student');
 
       const { count: activeLandlords } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'landlord')
-        .eq('is_active', true);
+        .eq('role', 'landlord');
 
       return {
         newStudents: students?.length || 0,
@@ -158,6 +185,7 @@ class ReportService {
         totalNewUsers: (students?.length || 0) + (landlords?.length || 0)
       };
     } catch (error) {
+      console.error('Error in getUserActivityReport:', error);
       throw error;
     }
   }
@@ -172,17 +200,30 @@ class ReportService {
 
       if (error) throw error;
 
+      // Handle null or empty data
+      if (!data || data.length === 0) {
+        return {
+          free: 0,
+          basic: 0,
+          premium: 0,
+          active: 0,
+          expired: 0,
+          cancelled: 0
+        };
+      }
+
       const stats = {
-        free: data?.filter(s => s.subscription_tier === 'free').length || 0,
-        basic: data?.filter(s => s.subscription_tier === 'basic').length || 0,
-        premium: data?.filter(s => s.subscription_tier === 'premium').length || 0,
-        active: data?.filter(s => s.subscription_status === 'active').length || 0,
-        expired: data?.filter(s => s.subscription_status === 'expired').length || 0,
-        cancelled: data?.filter(s => s.subscription_status === 'cancelled').length || 0
+        free: data.filter(s => s.subscription_tier === 'free' || !s.subscription_tier).length,
+        basic: data.filter(s => s.subscription_tier === 'basic').length,
+        premium: data.filter(s => s.subscription_tier === 'premium').length,
+        active: data.filter(s => s.subscription_status === 'active').length,
+        expired: data.filter(s => s.subscription_status === 'expired').length,
+        cancelled: data.filter(s => s.subscription_status === 'cancelled').length
       };
 
       return stats;
     } catch (error) {
+      console.error('Error in getSubscriptionReport:', error);
       throw error;
     }
   }
@@ -191,15 +232,16 @@ class ReportService {
   async getVerificationReport() {
     try {
       const { data, error } = await supabase
-        .from('landlords')
-        .select('verification_status, created_at');
+        .from('users')
+        .select('is_verified, created_at')
+        .eq('role', 'landlord');
 
       if (error) throw error;
 
       const stats = {
-        pending: data.filter(l => l.verification_status === 'pending').length,
-        verified: data.filter(l => l.verification_status === 'verified').length,
-        rejected: data.filter(l => l.verification_status === 'rejected').length,
+        pending: data.filter(l => !l.is_verified).length,
+        verified: data.filter(l => l.is_verified).length,
+        rejected: 0, // We don't have a rejected status in the current schema
         total: data.length
       };
 

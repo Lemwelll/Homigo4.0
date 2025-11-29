@@ -180,6 +180,159 @@ export const getPlatformStats = async (req, res) => {
 };
 
 /**
+ * Get dashboard analytics (comprehensive)
+ * @route GET /admin/dashboard
+ */
+export const getDashboardAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Set default date range if not provided (last 30 days)
+    const end = endDate || new Date().toISOString().split('T')[0];
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    console.log('Fetching dashboard analytics for:', { start, end });
+
+    // Fetch all data in parallel
+    const [
+      paymentsResult,
+      bookingsResult,
+      usersResult,
+      landlordsResult,
+      propertiesResult,
+      subscriptionsResult
+    ] = await Promise.all([
+      // Revenue data
+      supabase
+        .from('payment_history')
+        .select('amount, payment_date')
+        .gte('payment_date', start)
+        .lte('payment_date', end)
+        .eq('status', 'completed'),
+      
+      // Bookings data
+      supabase
+        .from('bookings')
+        .select('id, status, created_at, total_amount, property_id, properties(title)')
+        .gte('created_at', start)
+        .lte('created_at', end),
+      
+      // New users
+      supabase
+        .from('users')
+        .select('id, role, created_at')
+        .gte('created_at', start)
+        .lte('created_at', end)
+        .in('role', ['student', 'landlord']),
+      
+      // All landlords for verification status
+      supabase
+        .from('users')
+        .select('id, is_verified')
+        .eq('role', 'landlord'),
+      
+      // All properties
+      supabase
+        .from('properties')
+        .select('id'),
+      
+      // Subscription data
+      supabase
+        .from('users')
+        .select('subscription_tier')
+        .eq('role', 'student')
+    ]);
+
+    // Process revenue
+    const revenue = {
+      totalRevenue: paymentsResult.data?.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0,
+      transactionCount: paymentsResult.data?.length || 0,
+      dailyRevenue: []
+    };
+
+    // Process bookings
+    const bookings = {
+      total: bookingsResult.data?.length || 0,
+      confirmed: bookingsResult.data?.filter(b => b.status === 'confirmed').length || 0,
+      pending: bookingsResult.data?.filter(b => b.status === 'pending').length || 0,
+      completed: bookingsResult.data?.filter(b => b.status === 'completed').length || 0,
+      cancelled: bookingsResult.data?.filter(b => b.status === 'cancelled').length || 0
+    };
+
+    // Process users
+    const users = {
+      newStudents: usersResult.data?.filter(u => u.role === 'student').length || 0,
+      newLandlords: usersResult.data?.filter(u => u.role === 'landlord').length || 0,
+      totalActiveStudents: usersResult.data?.filter(u => u.role === 'student').length || 0,
+      totalActiveLandlords: usersResult.data?.filter(u => u.role === 'landlord').length || 0,
+      totalNewUsers: usersResult.data?.length || 0
+    };
+
+    // Process top properties
+    const propertyStats = {};
+    bookingsResult.data?.forEach(booking => {
+      const propId = booking.property_id;
+      if (!propertyStats[propId]) {
+        propertyStats[propId] = {
+          property_id: propId,
+          title: booking.properties?.title || 'Unknown Property',
+          bookings: 0,
+          confirmed: 0,
+          revenue: 0
+        };
+      }
+      propertyStats[propId].bookings++;
+      if (booking.status === 'confirmed') propertyStats[propId].confirmed++;
+      if (booking.status === 'completed') propertyStats[propId].revenue += parseFloat(booking.total_amount || 0);
+    });
+
+    const topProperties = Object.values(propertyStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    // Process subscriptions
+    const subscriptions = {
+      free: subscriptionsResult.data?.filter(s => !s.subscription_tier || s.subscription_tier === 'free').length || 0,
+      basic: subscriptionsResult.data?.filter(s => s.subscription_tier === 'basic').length || 0,
+      premium: subscriptionsResult.data?.filter(s => s.subscription_tier === 'premium').length || 0
+    };
+
+    // Process verifications
+    const verifications = {
+      pending: landlordsResult.data?.filter(l => !l.is_verified).length || 0,
+      verified: landlordsResult.data?.filter(l => l.is_verified).length || 0,
+      rejected: 0,
+      total: landlordsResult.data?.length || 0
+    };
+
+    const dashboardData = {
+      revenue,
+      bookings,
+      users,
+      topProperties,
+      subscriptions,
+      verifications,
+      generatedAt: new Date().toISOString()
+    };
+
+    console.log('Dashboard analytics generated successfully');
+
+    res.status(200).json({
+      success: true,
+      data: dashboardData
+    });
+
+  } catch (error) {
+    console.error('Error fetching dashboard analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard analytics',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Verify a landlord account
  * @route POST /admin/landlords/:landlordId/verify
  */

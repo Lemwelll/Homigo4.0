@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import { useStudent } from '../context/StudentContext'
 import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Search, CheckCircle } from 'lucide-react'
+import { Heart, Search, CheckCircle, Crown } from 'lucide-react'
 
 const StudentFavorites = () => {
   const navigate = useNavigate()
@@ -21,12 +21,30 @@ const StudentFavorites = () => {
     <DashboardLayout userType="student">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Saved Listings</h1>
-          <p className="text-gray-600">
-            Your favorite properties ({favoriteProperties.length}
-            {accountState.tier === 'free' && (
-              <span>/3 - <button onClick={() => navigate('/student/settings')} className="text-primary-600 hover:underline">Upgrade for unlimited</button></span>
-            )})
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-gray-800">Saved Listings</h1>
+            {accountState.tier === 'premium' && (
+              <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                <Crown className="w-4 h-4" />
+                <span>PREMIUM</span>
+              </div>
+            )}
+          </div>
+          <p className="text-gray-600 flex items-center gap-2 flex-wrap">
+            <span>
+              Your favorite properties ({favoriteProperties.length}
+              {accountState.tier === 'free' ? (
+                <span>/3 - <button onClick={() => navigate('/student/settings')} className="text-primary-600 hover:underline">Upgrade for unlimited</button></span>
+              ) : (
+                <span>/∞</span>
+              )})
+            </span>
+            {accountState.tier === 'premium' && (
+              <span className="flex items-center gap-1 text-green-600 font-semibold">
+                <CheckCircle className="w-4 h-4" />
+                <span>Unlimited</span>
+              </span>
+            )}
           </p>
         </div>
 
@@ -45,9 +63,9 @@ const StudentFavorites = () => {
                     onClick={() => navigate(`/property/${property.id}`)}
                   />
                   {property.verified && (
-                    <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Verified</span>
+                    <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg animate-pulse z-20">
+                      <CheckCircle className="w-3 h-3 fill-current" />
+                      <span>VERIFIED</span>
                     </div>
                   )}
                   <button

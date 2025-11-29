@@ -9,6 +9,7 @@ import {
   getAllLandlords,
   getAllStudents,
   getPlatformStats,
+  getDashboardAnalytics,
   verifyLandlord,
   suspendLandlord,
   getLandlordDocuments
@@ -28,6 +29,9 @@ router.get('/students', getAllStudents);
 
 // Get platform statistics
 router.get('/stats', getPlatformStats);
+
+// Get dashboard analytics (comprehensive)
+router.get('/dashboard', getDashboardAnalytics);
 
 // Get landlord documents
 router.get('/landlords/:landlordId/documents', getLandlordDocuments);

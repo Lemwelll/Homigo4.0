@@ -25,9 +25,9 @@ const PropertyCard = ({ property }) => {
           height="h-48"
         />
         {property.verified && (
-          <div className="absolute top-3 right-3 bg-secondary-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 text-sm font-semibold z-20">
-            <CheckCircle className="w-4 h-4" />
-            <span>Verified</span>
+          <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full flex items-center space-x-1 text-sm font-bold shadow-lg z-20 animate-pulse">
+            <CheckCircle className="w-4 h-4 fill-current" />
+            <span>VERIFIED</span>
           </div>
         )}
         <div className="absolute bottom-3 left-3 bg-primary-500 text-white px-4 py-2 rounded-lg font-bold text-lg z-20">

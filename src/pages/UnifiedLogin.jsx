@@ -201,15 +201,6 @@ const UnifiedLogin = () => {
           </div>
         </div>
 
-        {/* Demo Credentials */}
-        <div className="mt-6 card bg-blue-50 border border-blue-200">
-          <p className="text-sm font-semibold text-blue-800 mb-2">Demo Credentials:</p>
-          <div className="text-xs text-blue-700 space-y-1">
-            <p>• Student: Any email + password</p>
-            <p>• Landlord: Any email + password</p>
-            <p>• Admin: Any email + password</p>
-          </div>
-        </div>
       </div>
     </div>
   )

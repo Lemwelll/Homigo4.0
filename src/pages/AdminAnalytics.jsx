@@ -12,35 +12,69 @@ import {
 
 const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    revenue: { totalRevenue: 0, transactionCount: 0, dailyRevenue: [] },
+    bookings: { total: 0, confirmed: 0, pending: 0, completed: 0, cancelled: 0 },
+    users: { newStudents: 0, newLandlords: 0, totalActiveStudents: 0, totalActiveLandlords: 0, totalNewUsers: 0 },
+    topProperties: [],
+    subscriptions: { free: 0, basic: 0, premium: 0 },
+    verifications: { pending: 0, verified: 0, rejected: 0, total: 0 }
+  });
 
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange.startDate, dateRange.endDate]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const token = localStorage.getItem('homigo_token');
+      if (!token) {
+        setError('No authentication token found. Please login again.');
+        setLoading(false);
+        return;
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL || 'https://homigo-backend.onrender.com';
+      
+      console.log('Fetching analytics from:', `${API_URL}/admin/dashboard`);
+      console.log('Date range:', dateRange);
+      
       const response = await fetch(
-        `http://localhost:5000/reports/dashboard?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
+        `${API_URL}/admin/dashboard?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
         {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('Analytics data received:', data);
+      
       if (data.success) {
         setDashboardData(data.data);
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to fetch dashboard data');
+        console.error('Failed to fetch dashboard data:', data.message);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setError(error.message || 'Failed to load analytics data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -49,8 +83,9 @@ const AdminAnalytics = () => {
   const exportReport = async (type) => {
     try {
       const token = localStorage.getItem('homigo_token');
+      const API_URL = import.meta.env.VITE_API_URL || 'https://homigo-backend.onrender.com';
       const response = await fetch(
-        `http://localhost:5000/reports/export?type=${type}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
+        `${API_URL}/reports/export?type=${type}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -75,8 +110,9 @@ const AdminAnalytics = () => {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+        <div className="flex flex-col items-center justify-center h-64">
+          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+          <p className="text-gray-600">Loading analytics data...</p>
         </div>
       </AdminLayout>
     );
@@ -85,6 +121,29 @@ const AdminAnalytics = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error Loading Analytics</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <button
+                  onClick={fetchDashboardData}
+                  className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

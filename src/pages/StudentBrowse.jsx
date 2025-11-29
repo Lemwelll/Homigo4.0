@@ -67,10 +67,10 @@ const StudentBrowse = () => {
                   onChange={(e) => setPriceRange(e.target.value)}
                 >
                   <option value="all">All Prices</option>
-                  <option value="0-5000">₱0 - ₱5,000</option>
-                  <option value="5000-10000">₱5,000 - ₱10,000</option>
-                  <option value="10000-15000">₱10,000 - ₱15,000</option>
-                  <option value="15000+">₱15,000+</option>
+                  <option value="0-1000">₱0 - ₱1,000</option>
+                  <option value="1000-1500">₱1,000 - ₱1,500</option>
+                  <option value="1500-2500">₱1,5000 - ₱2,500</option>
+                  <option value="2500+">₱2,500+</option>
                 </select>
               </div>
             </div>
@@ -84,10 +84,10 @@ const StudentBrowse = () => {
                   onChange={(e) => setCity(e.target.value)}
                 >
                   <option value="all">All Cities</option>
-                  <option value="Quezon City">Quezon City</option>
-                  <option value="Manila">Manila</option>
-                  <option value="Makati">Makati</option>
-                  <option value="Pasig">Pasig</option>
+                  <option value="Quezon City">Valencia City</option>
+                  <option value="Manila">Malaybalay City</option>
+                  <option value="Makati">Musuan</option>
+                  <option value="Pasig">Maramag</option>
                 </select>
               </div>
             </div>
@@ -142,9 +142,9 @@ const StudentBrowse = () => {
                     onClick={() => navigate(`/property/${property.id}`)}
                   />
                   {property.verified && (
-                    <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Verified</span>
+                    <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg animate-pulse z-20">
+                      <CheckCircle className="w-3 h-3 fill-current" />
+                      <span>VERIFIED</span>
                     </div>
                   )}
                   <button
@@ -226,7 +226,7 @@ const StudentBrowse = () => {
                     <span>Early access to new features</span>
                   </li>
                 </ul>
-                <p className="text-2xl font-bold text-primary-900 mt-4">₱299/month</p>
+                <p className="text-2xl font-bold text-primary-900 mt-4">₱199/month</p>
               </div>
 
               <div className="flex gap-3">
