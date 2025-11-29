@@ -2,13 +2,16 @@ import { useState, useRef, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useNavigate } from 'react-router-dom'
 import { useProperties } from '../context/PropertyContext'
-import { Upload, CheckCircle, Home, X, Settings, ToggleLeft, ToggleRight, DollarSign } from 'lucide-react'
+import { useAccountTier } from '../context/AccountTierContext'
+import { Upload, CheckCircle, Home, X, Settings, ToggleLeft, ToggleRight, DollarSign, Crown } from 'lucide-react'
 
 const AddProperty = () => {
   const navigate = useNavigate()
-  const { addProperty } = useProperties()
+  const { addProperty, properties } = useProperties()
+  const { accountState } = useAccountTier()
   const fileInputRef = useRef(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState([])
   const [previewUrls, setPreviewUrls] = useState([])
   const [imageError, setImageError] = useState('')
@@ -148,6 +151,14 @@ const AddProperty = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Check tier limits - properties in context are already filtered to current landlord
+    const FREE_LISTING_LIMIT = 3
+    
+    if (accountState.tier === 'free' && properties.length >= FREE_LISTING_LIMIT) {
+      setShowUpgradeModal(true)
+      return
+    }
     
     try {
       // Prepare property data for backend
@@ -537,6 +548,64 @@ const AddProperty = () => {
             </button>
           </div>
         </form>
+
+        {/* Upgrade Modal */}
+        {showUpgradeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to Premium</h2>
+                <p className="text-gray-600">
+                  You've reached the free tier limit of 3 property listings
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-lg p-4 mb-6">
+                <h3 className="font-bold text-secondary-900 mb-2">Premium Benefits:</h3>
+                <ul className="space-y-2 text-sm text-secondary-800">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Unlimited property listings</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Featured listings (top placement)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Priority support</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Advanced analytics & insights</span>
+                  </li>
+                </ul>
+                <p className="text-2xl font-bold text-secondary-900 mt-4">₱299/month</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpgradeModal(false)
+                    navigate('/upgrade')
+                  }}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-lg hover:from-secondary-600 hover:to-secondary-700 transition-colors font-semibold"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

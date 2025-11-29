@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import PropertyImageGallery from '../components/PropertyImageGallery'
+import PropertyReviews from '../components/PropertyReviews'
 import { useStudent } from '../context/StudentContext'
 import { useReservation } from '../context/ReservationContext'
 import { useBooking } from '../context/BookingContext'
 import { useAuth } from '../context/AuthContext'
 import { useProperties } from '../context/PropertyContext'
 import { useMessages } from '../context/MessageContext'
+import { useAccountTier } from '../context/AccountTierContext'
 import Toast from '../components/Toast'
-import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock } from 'lucide-react'
+import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock, Crown, Map, Lock } from 'lucide-react'
 
 const PropertyDetails = () => {
   const { id } = useParams()
@@ -17,15 +19,22 @@ const PropertyDetails = () => {
   const { user } = useAuth()
   const { properties, toggleFavorite, isFavorite } = useStudent()
   const { fetchPropertyById } = useProperties()
-  const { createReservation, isPropertyReserved } = useReservation()
+  const { createReservation, isPropertyReserved, reservations } = useReservation()
   const { isPropertyBooked } = useBooking()
   const { startConversation } = useMessages()
+  const { accountState, incrementStudentReservations } = useAccountTier()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showReserveModal, setShowReserveModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [reservationMessage, setReservationMessage] = useState('')
   const viewTracked = useRef(false)
+  const [nearbyLandmarks, setNearbyLandmarks] = useState([])
+  const [loadingLandmarks, setLoadingLandmarks] = useState(false)
+
+  // Free tier limits
+  const FREE_RESERVATION_LIMIT = 2
 
   // Fetch property from backend and track view
   useEffect(() => {
@@ -50,6 +59,42 @@ const PropertyDetails = () => {
     }
     loadProperty()
   }, [id])
+
+  // Fetch nearby landmarks
+  useEffect(() => {
+    const loadNearbyLandmarks = async () => {
+      if (!property) return
+      
+      setLoadingLandmarks(true)
+      try {
+        // Fetch landmarks filtered by city (Musuan, Bukidnon)
+        const response = await fetch('http://localhost:5000/landmarks?city=Musuan', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          const landmarks = result.data || result
+          
+          // Map type to category and get top 5 landmarks
+          const mappedLandmarks = landmarks.map(landmark => ({
+            ...landmark,
+            category: landmark.type ? landmark.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Other'
+          })).slice(0, 5)
+          
+          setNearbyLandmarks(mappedLandmarks)
+        }
+      } catch (error) {
+        console.error('Failed to load landmarks:', error)
+      } finally {
+        setLoadingLandmarks(false)
+      }
+    }
+    
+    loadNearbyLandmarks()
+  }, [property])
 
   // Check if user is logged in, if not redirect to login
   useEffect(() => {
@@ -95,15 +140,51 @@ const PropertyDetails = () => {
       setToast({ message: 'You already have a reservation for this property!', type: 'info' })
       return
     }
+
+    // Check tier limits - filter to only current user's active reservations (reserved or approved)
+    const myActiveReservations = reservations.filter(r => 
+      r.student_id === user?.id && (r.status === 'reserved' || r.status === 'approved' || r.status === 'pending')
+    ).length
+    
+    console.log('🔍 Reservation Check:', {
+      tier: accountState.tier,
+      userId: user?.id,
+      totalReservations: reservations.length,
+      myActiveReservations,
+      limit: FREE_RESERVATION_LIMIT,
+      willBlock: accountState.tier === 'free' && myActiveReservations >= FREE_RESERVATION_LIMIT
+    })
+    
+    if (accountState.tier === 'free' && myActiveReservations >= FREE_RESERVATION_LIMIT) {
+      console.log('❌ BLOCKED: Showing upgrade modal')
+      setShowUpgradeModal(true)
+      return
+    }
+
+    console.log('✅ ALLOWED: Showing reservation modal')
     setShowReserveModal(true)
   }
 
   const handleConfirmReservation = async () => {
+    // Double-check limit before creating reservation
+    const myActiveReservations = reservations.filter(r => 
+      r.student_id === user?.id && (r.status === 'reserved' || r.status === 'approved' || r.status === 'pending')
+    ).length
+    
+    if (accountState.tier === 'free' && myActiveReservations >= FREE_RESERVATION_LIMIT) {
+      setShowReserveModal(false)
+      setShowUpgradeModal(true)
+      return
+    }
+    
     const result = await createReservation(property, reservationMessage)
     setShowReserveModal(false)
     setReservationMessage('')
     
     if (result.success) {
+      // Increment reservation count
+      incrementStudentReservations()
+      
       setToast({
         message: 'Property reserved! You have 48 hours to complete payment.',
         type: 'success'
@@ -147,6 +228,14 @@ const PropertyDetails = () => {
     navigate('/student/messages')
   }
 
+  const handleMapViewClick = () => {
+    if (accountState.tier === 'free') {
+      setShowUpgradeModal(true)
+    } else {
+      navigate('/student/landmarks')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar isLoggedIn={true} userType="student" />
@@ -164,7 +253,12 @@ const PropertyDetails = () => {
         <PropertyImageGallery 
           property={property}
           isFavorite={isFavorite(property.id)}
-          onToggleFavorite={() => toggleFavorite(property.id)}
+          onToggleFavorite={async () => {
+            const result = await toggleFavorite(property.id, accountState)
+            if (result && !result.success && result.error === 'limit_reached') {
+              setShowUpgradeModal(true)
+            }
+          }}
         />
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -209,9 +303,94 @@ const PropertyDetails = () => {
             <div className="card">
               <h2 className="text-xl font-bold text-gray-800 mb-3">Location</h2>
               <p className="text-gray-600 mb-4">{property.address}</p>
-              <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-64 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">📍 Map View</p>
+              <div className="rounded-lg overflow-hidden h-64">
+                <iframe
+                  src={`https://www.google.com/maps?q=${property.city || 'Musuan, Bukidnon'}&output=embed`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Property Location Map"
+                ></iframe>
               </div>
+            </div>
+
+            {/* Nearby Landmarks Section */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Nearby Landmarks</h2>
+                <button
+                  onClick={handleMapViewClick}
+                  disabled={accountState.tier === 'free'}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    accountState.tier === 'free'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-primary-500 hover:bg-primary-600 text-white'
+                  }`}
+                >
+                  {accountState.tier === 'free' ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Map View</span>
+                    </>
+                  ) : (
+                    <>
+                      <Map className="w-4 h-4" />
+                      <span>Map View</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {loadingLandmarks ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                  <p className="text-gray-500 text-sm">Loading landmarks...</p>
+                </div>
+              ) : nearbyLandmarks.length > 0 ? (
+                <div className="space-y-3">
+                  {nearbyLandmarks.map((landmark) => (
+                    <div
+                      key={landmark.id}
+                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800">{landmark.name}</h3>
+                        <p className="text-sm text-gray-600">{landmark.category}</p>
+                        {landmark.description && (
+                          <p className="text-xs text-gray-500 mt-1">{landmark.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500">No landmarks available</p>
+                </div>
+              )}
+
+              {accountState.tier === 'free' && nearbyLandmarks.length > 0 && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Crown className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-yellow-900 mb-1">
+                        Upgrade to Premium for Map View
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        View all landmarks on an interactive map and get directions to nearby places.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -281,6 +460,15 @@ const PropertyDetails = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Property Reviews Section */}
+        <div className="mt-12">
+          <PropertyReviews 
+            propertyId={property.id}
+            userRole={user?.role}
+            canReview={user?.role === 'student'}
+          />
         </div>
 
         {/* You Might Also Like */}
@@ -370,6 +558,64 @@ const PropertyDetails = () => {
                 className="flex-1 px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-semibold"
               >
                 Confirm Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to Premium</h2>
+              <p className="text-gray-600">
+                You've reached the free tier limit of {FREE_RESERVATION_LIMIT} active reservations
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-4 mb-6">
+              <h3 className="font-bold text-primary-900 mb-2">Premium Benefits:</h3>
+              <ul className="space-y-2 text-sm text-primary-800">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Unlimited reservations</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Unlimited favorites</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Priority support</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Early access to new features</span>
+                </li>
+              </ul>
+              <p className="text-2xl font-bold text-primary-900 mt-4">₱299/month</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false)
+                  navigate('/upgrade')
+                }}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-colors font-semibold"
+              >
+                Upgrade Now
               </button>
             </div>
           </div>

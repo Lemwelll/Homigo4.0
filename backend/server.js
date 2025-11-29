@@ -17,6 +17,15 @@ import activityRoutes from './routes/activityRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import preferencesRoutes from './routes/preferencesRoutes.js';
+import landmarkRoutes from './routes/landmarkRoutes.js';
+import searchHistoryRoutes from './routes/searchHistoryRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+import propertyReportRoutes from './routes/propertyReportRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { testConnection } from './config/database.js';
 
@@ -100,6 +109,33 @@ app.use('/notifications', notificationRoutes);
 
 // Admin routes
 app.use('/admin', adminRoutes);
+
+// Subscription routes
+app.use('/subscriptions', subscriptionRoutes);
+
+// Payment routes
+app.use('/payments', paymentRoutes);
+
+// Profile routes
+app.use('/profile', profileRoutes);
+
+// Review routes
+app.use('/reviews', reviewRoutes);
+
+// Notification Preferences routes
+app.use('/preferences', preferencesRoutes);
+
+// Landmark routes
+app.use('/landmarks', landmarkRoutes);
+
+// Search History routes
+app.use('/search-history', searchHistoryRoutes);
+
+// Report routes (Admin only - Analytics)
+app.use('/reports', reportRoutes);
+
+// Property Report routes (User reports about properties)
+app.use('/property-reports', propertyReportRoutes);
 
 // ============================================
 // ERROR HANDLING

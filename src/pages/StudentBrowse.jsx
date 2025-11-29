@@ -1,30 +1,37 @@
 import React, { useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useStudent } from '../context/StudentContext'
+import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
-import { Search, Filter, MapPin, DollarSign, Heart, CheckCircle } from 'lucide-react'
+import { Search, Filter, MapPin, DollarSign, Heart, CheckCircle, Crown } from 'lucide-react'
 
 const StudentBrowse = () => {
   const navigate = useNavigate()
   const { properties, toggleFavorite, isFavorite } = useStudent()
+  const { accountState } = useAccountTier()
   const [searchQuery, setSearchQuery] = useState('')
   const [priceRange, setPriceRange] = useState('all')
   const [city, setCity] = useState('all')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         property.location.toLowerCase().includes(searchQuery.toLowerCase())
+      property.location.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPrice = priceRange === 'all' || property.priceRange === priceRange
     const matchesCity = city === 'all' || property.city === city
     const matchesVerified = !verifiedOnly || property.verified
-    
+
     return matchesSearch && matchesPrice && matchesCity && matchesVerified
   })
 
-  const handleFavoriteClick = (e, propertyId) => {
+  const handleFavoriteClick = async (e, propertyId) => {
     e.stopPropagation()
-    toggleFavorite(propertyId)
+    const result = await toggleFavorite(propertyId, accountState)
+
+    if (result && !result.success && result.error === 'limit_reached') {
+      setShowUpgradeModal(true)
+    }
   }
 
   return (
@@ -50,7 +57,7 @@ const StudentBrowse = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -67,7 +74,7 @@ const StudentBrowse = () => {
                 </select>
               </div>
             </div>
-            
+
             <div>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -142,11 +149,10 @@ const StudentBrowse = () => {
                   )}
                   <button
                     onClick={(e) => handleFavoriteClick(e, property.id)}
-                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 ${
-                      isFavorite(property.id)
-                        ? 'bg-red-500 text-white'
-                        : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
-                    }`}
+                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 ${isFavorite(property.id)
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+                      }`}
                   >
                     <Heart className={`w-5 h-5 ${isFavorite(property.id) ? 'fill-current' : ''}`} />
                   </button>
@@ -183,6 +189,64 @@ const StudentBrowse = () => {
             >
               Clear All Filters
             </button>
+          </div>
+        )}
+
+        {/* Upgrade Modal */}
+        {showUpgradeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to Premium</h2>
+                <p className="text-gray-600">
+                  You've reached the free tier limit of 3 favorites
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-4 mb-6">
+                <h3 className="font-bold text-primary-900 mb-2">Premium Benefits:</h3>
+                <ul className="space-y-2 text-sm text-primary-800">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Unlimited favorites</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Unlimited reservations</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Priority support</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Early access to new features</span>
+                  </li>
+                </ul>
+                <p className="text-2xl font-bold text-primary-900 mt-4">₱299/month</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpgradeModal(false)
+                    navigate('/upgrade')
+                  }}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-colors font-semibold"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

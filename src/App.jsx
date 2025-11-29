@@ -14,6 +14,10 @@ import StudentSettings from './pages/StudentSettings'
 import StudentEscrow from './pages/StudentEscrow'
 import SecurePayment from './pages/SecurePayment'
 import Notifications from './pages/Notifications'
+import UpgradePremium from './pages/UpgradePremium'
+import PaymentHistory from './pages/PaymentHistory'
+import PaymentMethods from './pages/PaymentMethods'
+import LandmarksMap from './pages/LandmarksMap'
 import LandlordDashboard from './pages/LandlordDashboard'
 import LandlordProperties from './pages/LandlordProperties'
 import LandlordReservations from './pages/LandlordReservations'
@@ -26,6 +30,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminVerifications from './pages/AdminVerifications'
 import AdminLandlords from './pages/AdminLandlords'
 import AdminReports from './pages/AdminReports'
+import AdminAnalytics from './pages/AdminAnalytics'
 import AdminSettings from './pages/AdminSettings'
 import PropertyDetails from './pages/PropertyDetails'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -39,20 +44,22 @@ import { EscrowProvider } from './context/EscrowContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { ActivityProvider } from './context/ActivityContext'
 import { MessageProvider } from './context/MessageContext'
+import { AccountTierProvider } from './context/AccountTierContext'
 
 function App() {
   return (
     <AuthProvider>
-      <PropertyProvider>
-        <AdminProvider>
-          <StudentProvider>
-            <ReservationProvider>
-              <BookingProvider>
-                <EscrowProvider>
-                  <MessageProvider>
-                  <NotificationProvider>
-                    <ActivityProvider>
-                    <Router>
+      <AccountTierProvider>
+        <PropertyProvider>
+          <AdminProvider>
+            <StudentProvider>
+              <ReservationProvider>
+                <BookingProvider>
+                  <EscrowProvider>
+                    <MessageProvider>
+                    <NotificationProvider>
+                      <ActivityProvider>
+                      <Router>
                       <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -145,6 +152,38 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/upgrade"
+                  element={
+                    <ProtectedRoute>
+                      <UpgradePremium />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-history"
+                  element={
+                    <ProtectedRoute>
+                      <PaymentHistory />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-methods"
+                  element={
+                    <ProtectedRoute>
+                      <PaymentMethods />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/landmarks"
+                  element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <LandmarksMap />
                     </ProtectedRoute>
                   }
                 />
@@ -249,6 +288,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/admin/analytics"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminAnalytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/admin/settings"
                   element={
                     <ProtectedRoute allowedRoles={['admin']}>
@@ -268,15 +315,16 @@ function App() {
                 />
                       </Routes>
                     </Router>
-                      </ActivityProvider>
-                    </NotificationProvider>
-                  </MessageProvider>
-                </EscrowProvider>
-              </BookingProvider>
-            </ReservationProvider>
-          </StudentProvider>
-        </AdminProvider>
-      </PropertyProvider>
+                        </ActivityProvider>
+                      </NotificationProvider>
+                    </MessageProvider>
+                  </EscrowProvider>
+                </BookingProvider>
+              </ReservationProvider>
+            </StudentProvider>
+          </AdminProvider>
+        </PropertyProvider>
+      </AccountTierProvider>
     </AuthProvider>
   )
 }

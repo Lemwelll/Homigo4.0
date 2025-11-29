@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
-import { User, Mail, Phone, Lock, Save, CheckCircle, Building2, MapPin, CreditCard, FileText, Upload, X, Eye } from 'lucide-react'
+import { useAccountTier } from '../context/AccountTierContext'
+import { useNavigate } from 'react-router-dom'
+import { User, Mail, Phone, Lock, Save, CheckCircle, Building2, MapPin, CreditCard, FileText, Upload, X, Eye, Crown, AlertTriangle } from 'lucide-react'
 
 const API_URL = 'http://localhost:5000'
 
 const LandlordSettings = () => {
+  const { accountState, downgradeToFree } = useAccountTier()
+  const navigate = useNavigate()
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -632,6 +637,120 @@ const LandlordSettings = () => {
             </button>
           </div>
         </form>
+
+        {/* Subscription Management */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <Crown className="w-6 h-6 text-yellow-500" />
+            <h2 className="text-xl font-bold text-gray-800">Subscription</h2>
+          </div>
+
+          {accountState.tier === 'premium' ? (
+            <div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-6 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-green-900">Premium Landlord</h3>
+                    <p className="text-green-700">Active subscription</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-green-900">₱199</p>
+                    <p className="text-sm text-green-700">per month</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-green-800">
+                  <p>✓ Unlimited property listings</p>
+                  <p>✓ Featured listings</p>
+                  <p>✓ Priority support</p>
+                  <p>✓ Advanced analytics</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="w-full px-4 py-3 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 transition font-semibold"
+              >
+                Cancel Subscription
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6 mb-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Free Plan</h3>
+                <p className="text-gray-600 mb-4">Limited to 3 property listings</p>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p>• Up to 3 property listings</p>
+                  <p>• Basic support</p>
+                  <p>• Standard features</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/upgrade')}
+                className="w-full px-4 py-3 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white rounded-lg hover:from-secondary-600 hover:to-secondary-700 transition font-semibold"
+              >
+                Upgrade to Premium
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Cancel Subscription Modal */}
+        {showCancelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">Cancel Subscription?</h2>
+                </div>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Are you sure you want to cancel your Premium subscription?
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-800 font-semibold mb-2">You will lose access to:</p>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    <li>• Unlimited property listings</li>
+                    <li>• Featured listings (top placement)</li>
+                    <li>• Priority support</li>
+                    <li>• Advanced analytics & insights</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-semibold"
+                >
+                  Keep Premium
+                </button>
+                <button
+                  onClick={() => {
+                    downgradeToFree()
+                    setShowCancelModal(false)
+                    setShowSuccess(true)
+                    setTimeout(() => setShowSuccess(false), 3000)
+                  }}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+                >
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

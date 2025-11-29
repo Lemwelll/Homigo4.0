@@ -1,17 +1,20 @@
 import React from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useStudent } from '../context/StudentContext'
+import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
 import { Heart, Search, CheckCircle } from 'lucide-react'
 
 const StudentFavorites = () => {
   const navigate = useNavigate()
   const { getFavoriteProperties, toggleFavorite, isFavorite } = useStudent()
+  const { accountState } = useAccountTier()
   const favoriteProperties = getFavoriteProperties()
 
-  const handleFavoriteClick = (e, propertyId) => {
+  const handleFavoriteClick = async (e, propertyId) => {
     e.stopPropagation()
-    toggleFavorite(propertyId)
+    // When removing from favorites, no need to check limits
+    await toggleFavorite(propertyId, accountState)
   }
 
   return (
@@ -19,7 +22,12 @@ const StudentFavorites = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Saved Listings</h1>
-          <p className="text-gray-600">Your favorite properties ({favoriteProperties.length})</p>
+          <p className="text-gray-600">
+            Your favorite properties ({favoriteProperties.length}
+            {accountState.tier === 'free' && (
+              <span>/3 - <button onClick={() => navigate('/student/settings')} className="text-primary-600 hover:underline">Upgrade for unlimited</button></span>
+            )})
+          </p>
         </div>
 
         {favoriteProperties.length > 0 ? (

@@ -10,6 +10,22 @@ import { supabase } from '../config/database.js';
  */
 export const createProperty = async (propertyData, landlordId) => {
   try {
+    // Check tier limits - Free tier: max 3 property listings
+    // For now, assume all users are on free tier (default behavior)
+    const { data: existingProperties, error: countError } = await supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: false })
+      .eq('landlord_id', landlordId);
+
+    if (countError) throw countError;
+
+    const FREE_LISTING_LIMIT = 3;
+
+    // Enforce free tier limit (all users are free tier by default)
+    if (existingProperties && existingProperties.length >= FREE_LISTING_LIMIT) {
+      throw new Error(`Free tier limit reached. You can only have ${FREE_LISTING_LIMIT} property listings. Upgrade to premium for unlimited listings.`);
+    }
+
     // Insert property
     const { data: property, error: propertyError } = await supabase
       .from('properties')
@@ -304,18 +320,27 @@ export const getVerifiedProperties = async (limit = 50, offset = 0) => {
       .select('*')
       .range(offset, offset + limit - 1);
 
-    if (!viewError && viewProperties) {
-      // Fetch amenities separately for better performance
+    if (!viewError && viewProperties && viewProperties.length > 0) {
+      // Fetch images and amenities separately for better performance
       const propertyIds = viewProperties.map(p => p.id);
-      const { data: amenities } = await supabase
-        .from('property_amenities')
-        .select('property_id, amenity_name')
-        .in('property_id', propertyIds);
+      
+      const [imagesResult, amenitiesResult] = await Promise.all([
+        supabase
+          .from('property_images')
+          .select('property_id, image_url, is_primary, display_order')
+          .in('property_id', propertyIds)
+          .order('display_order'),
+        supabase
+          .from('property_amenities')
+          .select('property_id, amenity_name')
+          .in('property_id', propertyIds)
+      ]);
 
-      // Attach amenities to properties
+      // Attach images and amenities to properties
       return viewProperties.map(prop => ({
         ...prop,
-        property_amenities: amenities?.filter(a => a.property_id === prop.id) || []
+        property_images: imagesResult.data?.filter(img => img.property_id === prop.id) || [],
+        property_amenities: amenitiesResult.data?.filter(a => a.property_id === prop.id) || []
       }));
     }
 

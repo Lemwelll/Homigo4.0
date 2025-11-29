@@ -61,6 +61,22 @@ export const getStudentFavorites = async (studentId) => {
  */
 export const addFavorite = async (studentId, propertyId) => {
   try {
+    // Check tier limits - Free tier: max 3 favorites
+    // For now, assume all users are on free tier (default behavior)
+    const { data: existingFavorites, error: countError } = await supabase
+      .from('favorites')
+      .select('id', { count: 'exact', head: false })
+      .eq('student_id', studentId);
+
+    if (countError) throw countError;
+
+    const FREE_FAVORITE_LIMIT = 3;
+
+    // Enforce free tier limit (all users are free tier by default)
+    if (existingFavorites && existingFavorites.length >= FREE_FAVORITE_LIMIT) {
+      throw new Error(`Free tier limit reached. You can only have ${FREE_FAVORITE_LIMIT} favorites. Upgrade to premium for unlimited favorites.`);
+    }
+
     const { data, error} = await supabase
       .from('favorites')
       .insert({

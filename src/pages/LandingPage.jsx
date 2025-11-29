@@ -76,6 +76,149 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
+            Choose Your Plan
+          </h2>
+          <p className="text-center text-gray-600 mb-12">
+            Start free and upgrade anytime to unlock unlimited access
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Free Plan */}
+            <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Free</h3>
+                <div className="text-4xl font-bold text-gray-800 mb-2">₱0</div>
+                <p className="text-gray-600">Perfect to get started</p>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    <strong>Students:</strong> Up to 3 favorites & 2 reservations
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    <strong>Landlords:</strong> Up to 3 property listings
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Basic messaging & notifications</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Verified property access</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/student/register"
+                className="block w-full text-center bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+              >
+                Get Started Free
+              </Link>
+            </div>
+
+            {/* Premium Student Plan */}
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-xl p-8 border-2 border-primary-400 relative">
+              <div className="absolute top-0 right-0 bg-yellow-400 text-gray-900 px-4 py-1 rounded-bl-lg rounded-tr-lg font-semibold text-sm">
+                POPULAR
+              </div>
+
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">Premium Student</h3>
+                <div className="text-4xl font-bold text-white mb-2">₱149</div>
+                <p className="text-primary-100">per month</p>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-yellow-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Unlimited favorites</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-yellow-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Unlimited reservations</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-yellow-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Priority support</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-yellow-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Advanced search filters</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-yellow-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Early access to new listings</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/student/register"
+                className="block w-full text-center bg-white text-primary-600 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
+                Get Student Premium
+              </Link>
+            </div>
+
+            {/* Premium Landlord Plan */}
+            <div className="bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-lg shadow-xl p-8 border-2 border-secondary-400 relative">
+              <div className="absolute top-0 right-0 bg-green-400 text-gray-900 px-4 py-1 rounded-bl-lg rounded-tr-lg font-semibold text-sm">
+                BEST VALUE
+              </div>
+
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">Premium Landlord</h3>
+                <div className="text-4xl font-bold text-white mb-2">₱199</div>
+                <p className="text-secondary-100">per month</p>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Unlimited property listings</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Featured listings (top placement)</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Priority support & faster responses</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Advanced analytics & insights</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-300 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-white">Verified landlord badge</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/landlord/register"
+                className="block w-full text-center bg-white text-secondary-600 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
+                Get Landlord Premium
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-center text-gray-600 mt-8">
+            All plans include secure escrow payments and verified property access
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

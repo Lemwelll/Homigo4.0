@@ -4,6 +4,7 @@
  */
 
 import * as reservationService from '../services/reservationService.js';
+import { createNotification } from '../services/notificationService.js';
 
 /**
  * Create a new reservation
@@ -36,6 +37,23 @@ export const createReservation = async (req, res) => {
       property_id,
       message
     );
+
+    // Create notification for landlord
+    try {
+      if (reservation.landlord_id) {
+        await createNotification({
+          type: 'reservation_created',
+          senderId: userId,
+          receiverId: reservation.landlord_id,
+          title: 'New Reservation Request',
+          message: `New reservation request for your property`,
+          actionUrl: '/landlord/reservations'
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+      // Don't fail the reservation if notification fails
+    }
 
     return res.status(201).json({
       success: true,

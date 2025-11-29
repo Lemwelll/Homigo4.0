@@ -6,6 +6,7 @@ import Toast from '../components/Toast'
 import { useReservation } from '../context/ReservationContext'
 import { useStudent } from '../context/StudentContext'
 import { useBooking } from '../context/BookingContext'
+import { useAccountTier } from '../context/AccountTierContext'
 import { Clock } from 'lucide-react'
 
 const StudentReservations = () => {
@@ -13,6 +14,7 @@ const StudentReservations = () => {
   const { getStudentReservations, cancelReservation } = useReservation()
   const { properties } = useStudent()
   const { getStudentBookings } = useBooking()
+  const { accountState } = useAccountTier()
   const [toast, setToast] = useState(null)
 
   const reservations = getStudentReservations()
@@ -109,6 +111,14 @@ const StudentReservations = () => {
           </div>
           <p className="text-gray-600">
             Manage your property reservations and proceed to payment when approved
+            {accountState.tier === 'free' && (() => {
+              const activePendingCount = reservations.filter(r => r.status === 'pending').length
+              return (
+                <span className="ml-2 text-sm">
+                  ({activePendingCount}/2 active - <button onClick={() => navigate('/student/settings')} className="text-primary-600 hover:underline">Upgrade for unlimited</button>)
+                </span>
+              )
+            })()}
           </p>
         </div>
 

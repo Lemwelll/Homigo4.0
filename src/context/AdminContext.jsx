@@ -15,6 +15,7 @@ export const useAdmin = () => {
 export const AdminProvider = ({ children }) => {
   const [landlords, setLandlords] = useState([])
   const [properties, setProperties] = useState([])
+  const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false)
 
   // Get JWT token from localStorage
@@ -134,12 +135,135 @@ export const AdminProvider = ({ children }) => {
     }
   }
 
+  // Fetch property reports from API
+  const fetchReports = async () => {
+    try {
+      setLoading(true)
+      const token = getToken()
+      
+      if (!token) {
+        console.log('No token found')
+        return
+      }
+
+      const response = await fetch(`${API_URL}/property-reports`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformedReports = data.data.map(report => ({
+          id: report.id,
+          propertyId: report.property_id,
+          propertyTitle: report.properties?.title || 'Unknown Property',
+          reportedBy: report.users?.full_name || 'Unknown User',
+          reportedByEmail: report.users?.email || '',
+          reason: formatReason(report.reason),
+          description: report.description,
+          reportDate: new Date(report.created_at).toLocaleDateString(),
+          status: formatStatus(report.status),
+          adminNote: report.admin_note || '',
+          resolvedAt: report.resolved_at ? new Date(report.resolved_at).toLocaleDateString() : null
+        }))
+        
+        setReports(transformedReports)
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Helper functions to format data
+  const formatReason = (reason) => {
+    const reasonMap = {
+      'misleading_info': 'Misleading Information',
+      'inappropriate_content': 'Inappropriate Content',
+      'scam_fraud': 'Scam/Fraud',
+      'duplicate_listing': 'Duplicate Listing',
+      'other': 'Other'
+    }
+    return reasonMap[reason] || reason
+  }
+
+  const formatStatus = (status) => {
+    const statusMap = {
+      'pending': 'Pending Review',
+      'resolved': 'Resolved',
+      'dismissed': 'Dismissed'
+    }
+    return statusMap[status] || status
+  }
+
+  // Report actions
+  const resolveReport = async (reportId, adminNote = '') => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/property-reports/${reportId}/resolve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ admin_note: adminNote })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh reports list
+        await fetchReports()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error resolving report:', error)
+      throw error
+    }
+  }
+
+  const dismissReport = async (reportId, adminNote = '') => {
+    try {
+      const token = getToken()
+      
+      const response = await fetch(`${API_URL}/property-reports/${reportId}/dismiss`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ admin_note: adminNote })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh reports list
+        await fetchReports()
+        return true
+      } else {
+        throw new Error(data.message)
+      }
+    } catch (error) {
+      console.error('Error dismissing report:', error)
+      throw error
+    }
+  }
+
   // Fetch data on mount
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('homigo_user') || '{}')
     if (user.role === 'admin') {
       fetchAllProperties()
       fetchLandlords()
+      fetchReports()
     }
   }, [])
 
@@ -277,14 +401,18 @@ export const AdminProvider = ({ children }) => {
     <AdminContext.Provider value={{
       landlords,
       properties,
+      reports,
       loading,
       stats,
       approveProperty,
       rejectProperty,
       verifyLandlord,
       suspendLandlord,
+      resolveReport,
+      dismissReport,
       fetchAllProperties,
-      fetchLandlords
+      fetchLandlords,
+      fetchReports
     }}>
       {children}
     </AdminContext.Provider>

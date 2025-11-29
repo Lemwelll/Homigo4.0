@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useNavigate } from 'react-router-dom'
 import { useProperties } from '../context/PropertyContext'
+import { useAccountTier } from '../context/AccountTierContext'
 import { Eye, Edit, Trash2, PlusCircle, Search } from 'lucide-react'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import EditPropertyModal from '../components/EditPropertyModal'
@@ -10,6 +11,7 @@ import ImageCarousel from '../components/ImageCarousel'
 const LandlordProperties = () => {
   const navigate = useNavigate()
   const { properties, deleteProperty } = useProperties()
+  const { accountState } = useAccountTier()
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -44,7 +46,14 @@ const LandlordProperties = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">My Properties</h1>
-            <p className="text-gray-600">Manage all your rental listings</p>
+            <p className="text-gray-600">
+              Manage all your rental listings 
+              {accountState.tier === 'free' && (
+                <span className="ml-2 text-sm">
+                  ({properties.length}/3 used - <button onClick={() => navigate('/landlord/settings')} className="text-primary-600 hover:underline">Upgrade for unlimited</button>)
+                </span>
+              )}
+            </p>
           </div>
           <button
             onClick={() => navigate('/landlord/add-property')}

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, CheckCircle, Users, Flag, Settings } from 'lucide-react'
+import { LayoutDashboard, CheckCircle, Users, Flag, BarChart3, Settings } from 'lucide-react'
 
 const AdminSidebar = ({ onNavigate, isExpanded = true }) => {
   const location = useLocation()
@@ -9,6 +9,7 @@ const AdminSidebar = ({ onNavigate, isExpanded = true }) => {
     { to: '/admin/verifications', icon: CheckCircle, label: 'Verifications' },
     { to: '/admin/landlords', icon: Users, label: 'Landlords' },
     { to: '/admin/reports', icon: Flag, label: 'Reports' },
+    { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' }
   ]
 

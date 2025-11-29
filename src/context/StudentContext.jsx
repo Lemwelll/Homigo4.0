@@ -246,10 +246,10 @@ export const StudentProvider = ({ children }) => {
     }
   ])
 
-  const toggleFavorite = async (propertyId) => {
+  const toggleFavorite = async (propertyId, accountTier = null) => {
     try {
       const token = getToken()
-      if (!token) return
+      if (!token) return { success: false, error: 'Not authenticated' }
 
       const isFav = favorites.includes(propertyId)
 
@@ -266,8 +266,15 @@ export const StudentProvider = ({ children }) => {
 
         if (data.success) {
           setFavorites(prev => prev.filter(id => id !== propertyId))
+          return { success: true, action: 'removed' }
         }
       } else {
+        // Check tier limit before adding
+        const FREE_FAVORITE_LIMIT = 3
+        if (accountTier?.tier === 'free' && favorites.length >= FREE_FAVORITE_LIMIT) {
+          return { success: false, error: 'limit_reached', limit: FREE_FAVORITE_LIMIT }
+        }
+
         // Add to favorites
         const response = await fetch(`${API_URL}/favorites`, {
           method: 'POST',
@@ -282,10 +289,13 @@ export const StudentProvider = ({ children }) => {
 
         if (data.success) {
           setFavorites(prev => [...prev, propertyId])
+          return { success: true, action: 'added' }
         }
       }
+      return { success: false, error: 'Unknown error' }
     } catch (error) {
       console.error('Error toggling favorite:', error)
+      return { success: false, error: error.message }
     }
   }
 
@@ -316,8 +326,53 @@ export const StudentProvider = ({ children }) => {
     }))
   }
 
-  const updateProfile = (updates) => {
-    setStudent(prev => ({ ...prev, ...updates }))
+  const updateProfile = async (updates) => {
+    try {
+      const token = getToken()
+      if (!token) {
+        console.error('No token found')
+        return { success: false, message: 'Not authenticated' }
+      }
+
+      // Map frontend field names to backend field names
+      const backendUpdates = {
+        full_name: updates.name,
+        email: updates.email,
+        student_id_number: updates.studentId,
+        university: updates.university
+      }
+
+      console.log('📡 Updating profile:', backendUpdates)
+
+      const response = await fetch(`${API_URL}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendUpdates)
+      })
+
+      const data = await response.json()
+      console.log('📊 Update response:', data)
+
+      if (data.success) {
+        // Update local state with new data
+        setStudent({
+          name: data.data.full_name,
+          email: data.data.email,
+          studentId: data.data.student_id_number || '',
+          university: data.data.university || ''
+        })
+        return { success: true, message: 'Profile updated successfully' }
+      } else {
+        console.error('❌ Profile update failed:', data.message)
+        return { success: false, message: data.message }
+      }
+    } catch (error) {
+      console.error('❌ Error updating profile:', error)
+      return { success: false, message: 'Failed to update profile' }
+    }
   }
 
   const stats = {

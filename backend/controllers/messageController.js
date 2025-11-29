@@ -4,6 +4,7 @@
  */
 
 import * as messageService from '../services/messageService.js';
+import { createNotification } from '../services/notificationService.js';
 
 /**
  * Get all conversations for the logged-in user
@@ -89,6 +90,21 @@ export const sendMessage = async (req, res) => {
       message.trim(),
       property_id || null
     );
+
+    // Create notification for receiver
+    try {
+      await createNotification({
+        type: 'message',
+        senderId: senderId,
+        receiverId: receiver_id,
+        title: 'New Message',
+        message: message.trim().substring(0, 100),
+        actionUrl: '/messages'
+      });
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+      // Don't fail the message send if notification fails
+    }
 
     return res.status(201).json({
       success: true,
