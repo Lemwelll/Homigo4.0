@@ -52,7 +52,8 @@ const StudentRegister = () => {
       // If student ID file is selected, save base64 to database
       if (studentIdFile && result.user.id) {
         try {
-          const uploadResponse = await fetch('http://localhost:5000/upload/student-id', {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+          const uploadResponse = await fetch(`${API_URL}/upload/student-id`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

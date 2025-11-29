@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import API_URL from '../config/api';
 
 const AccountTierContext = createContext();
-
-const API_URL = API_URL;
 
 export const useAccountTier = () => {
   const context = useContext(AccountTierContext);

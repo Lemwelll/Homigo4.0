@@ -50,7 +50,8 @@ const LandlordRegister = () => {
       // If government ID file is selected, save base64 to database
       if (governmentIdFile && result.user.id) {
         try {
-          const uploadResponse = await fetch('http://localhost:5000/upload/government-id', {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+          const uploadResponse = await fetch(`${API_URL}/upload/government-id`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
