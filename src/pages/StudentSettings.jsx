@@ -4,8 +4,7 @@ import { useStudent } from '../context/StudentContext'
 import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, Save, CheckCircle, BookOpen, Crown, AlertTriangle, X } from 'lucide-react'
-
-const API_URL = 'http://localhost:5000'
+import API_URL from '../config/api'
 
 const StudentSettings = () => {
   const { student, updateProfile } = useStudent()

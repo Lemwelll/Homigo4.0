@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const PropertyContext = createContext()
 
-const API_URL = 'http://localhost:5000'
 
 export const useProperties = () => {
   const context = useContext(PropertyContext)

@@ -3,7 +3,6 @@ import { Star, TrendingUp } from 'lucide-react'
 import ReviewCard from './ReviewCard'
 import WriteReviewModal from './WriteReviewModal'
 
-const API_URL = 'http://localhost:5000'
 
 const PropertyReviews = ({ propertyId, userRole, canReview = false }) => {
   const [reviews, setReviews] = useState([])

@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { CreditCard, Plus, Trash2, Check, X } from 'lucide-react'
 import Toast from '../components/Toast'
 
-const API_URL = 'http://localhost:5000'
 
 const PaymentMethods = () => {
   const { user } = useAuth()

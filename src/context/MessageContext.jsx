@@ -3,7 +3,6 @@ import { useAuth } from './AuthContext'
 
 const MessageContext = createContext()
 
-const API_URL = 'http://localhost:5000'
 
 export const useMessages = () => {
   const context = useContext(MessageContext)

@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import API_BASE_URL from '../config/api'
 
 const AuthContext = createContext()
 
 // Backend API URL
-const API_URL = 'http://localhost:5000/auth'
+const API_URL = `${API_BASE_URL}/auth`
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -132,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('homigo_token')
       if (!token) return
 
-      const response = await fetch(`http://localhost:5000/auth/profile`, {
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

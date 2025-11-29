@@ -4,7 +4,6 @@ import StatusBadge from '../components/StatusBadge'
 import { useAdmin } from '../context/AdminContext'
 import { CheckCircle, Ban, Eye, Search, Mail, Phone, X, User, FileText, Download } from 'lucide-react'
 
-const API_URL = 'http://localhost:5000'
 
 const AdminLandlords = () => {
   const { landlords, verifyLandlord, suspendLandlord } = useAdmin()

@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const AdminContext = createContext()
 
-const API_URL = 'http://localhost:5000'
 
 export const useAdmin = () => {
   const context = useContext(AdminContext)

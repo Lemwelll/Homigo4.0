@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 
 const AccountTierContext = createContext();
 
-const API_URL = 'http://localhost:5000';
+const API_URL = API_URL;
 
 export const useAccountTier = () => {
   const context = useContext(AccountTierContext);

@@ -4,7 +4,6 @@ import DashboardLayout from '../components/DashboardLayout'
 import { useAccountTier } from '../context/AccountTierContext'
 import { MapPin, Droplet, Printer, Store, Crown, Lock } from 'lucide-react'
 
-const API_URL = 'http://localhost:5000'
 
 const LandmarksMap = () => {
   const navigate = useNavigate()

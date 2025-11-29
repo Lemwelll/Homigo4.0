@@ -12,6 +12,7 @@ import { useMessages } from '../context/MessageContext'
 import { useAccountTier } from '../context/AccountTierContext'
 import Toast from '../components/Toast'
 import { MapPin, Bed, Bath, CheckCircle, MessageSquare, Heart, ArrowLeft, Clock, Crown, Map, Lock } from 'lucide-react'
+import API_URL from '../config/api'
 
 const PropertyDetails = () => {
   const { id } = useParams()

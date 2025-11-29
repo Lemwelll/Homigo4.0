@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { useMessages } from '../context/MessageContext'
 import { Search, Send, X, MessageSquare, Plus } from 'lucide-react'
+import API_URL from '../config/api'
 
 const StudentMessages = () => {
   const { 

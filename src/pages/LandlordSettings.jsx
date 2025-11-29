@@ -4,7 +4,6 @@ import { useAccountTier } from '../context/AccountTierContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Phone, Lock, Save, CheckCircle, Building2, MapPin, CreditCard, FileText, Upload, X, Eye, Crown, AlertTriangle } from 'lucide-react'
 
-const API_URL = 'http://localhost:5000'
 
 const LandlordSettings = () => {
   const { accountState, downgradeToFree } = useAccountTier()

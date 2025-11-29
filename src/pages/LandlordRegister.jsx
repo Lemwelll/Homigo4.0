@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Phone, Upload, ArrowLeft, Building2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import API_URL from '../config/api'
 
 const LandlordRegister = () => {
   const navigate = useNavigate()

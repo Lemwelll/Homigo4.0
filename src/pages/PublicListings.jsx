@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, Home, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = 'http://localhost:5000'
 
 const PublicListings = () => {
   const navigate = useNavigate();

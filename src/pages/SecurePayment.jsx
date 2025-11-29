@@ -9,6 +9,7 @@ import PaymentForm from '../components/PaymentForm'
 import Toast from '../components/Toast'
 import { useBooking } from '../context/BookingContext'
 import { ArrowLeft, CreditCard } from 'lucide-react'
+import API_URL from '../config/api'
 
 const SecurePayment = () => {
   const navigate = useNavigate()

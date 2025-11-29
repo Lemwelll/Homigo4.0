@@ -11,7 +11,6 @@ export const useNotifications = () => {
   return context
 }
 
-const API_URL = 'http://localhost:5000'
 
 export const NotificationProvider = ({ children }) => {
   const { user } = useAuth()

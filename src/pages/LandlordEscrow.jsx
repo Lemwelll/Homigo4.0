@@ -7,6 +7,7 @@ import EscrowTable from '../components/EscrowTable'
 import PaymentDetailsModal from '../components/PaymentDetailsModal'
 import NotificationToast from '../components/NotificationToast'
 import { useEscrow } from '../context/EscrowContext'
+import API_URL from '../config/api'
 
 const LandlordEscrow = () => {
   const { getLandlordTransactions, refreshTransactions } = useEscrow()
