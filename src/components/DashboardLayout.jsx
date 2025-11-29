@@ -83,7 +83,7 @@ const DashboardLayout = ({ children, userType }) => {
                   <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-medium text-sm">
                     {getInitials()}
                   </div>
-                  {userType === 'student' && accountState?.tier === 'premium' && (
+                  {accountState?.tier === 'premium' && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                       <Crown className="w-2.5 h-2.5 text-white" />
                     </div>
@@ -95,17 +95,17 @@ const DashboardLayout = ({ children, userType }) => {
                     <span className="text-gray-700 font-medium">
                       {user?.name || 'User'}
                     </span>
-                    {userType === 'student' && accountState?.tier === 'premium' && (
+                    {accountState?.tier === 'premium' && (
                       <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                        <Star className="w-2.5 h-2.5" />
-                        <span>PRO</span>
+                        <Crown className="w-2.5 h-2.5" />
+                        <span>PREMIUM</span>
                       </div>
                     )}
                   </div>
-                  {userType === 'student' && accountState?.tier === 'premium' && (
-                    <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Premium</span>
+                  {accountState?.tier === 'premium' && (
+                    <div className="flex items-center gap-1 text-xs text-yellow-600 font-semibold">
+                      <Star className="w-3 h-3" />
+                      <span>Premium Member</span>
                     </div>
                   )}
                 </div>

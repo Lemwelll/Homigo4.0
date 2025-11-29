@@ -10,21 +10,36 @@ import { supabase } from '../config/database.js';
  */
 export const createProperty = async (propertyData, landlordId) => {
   try {
-    // Check tier limits - Free tier: max 3 property listings
-    // For now, assume all users are on free tier (default behavior)
-    const { data: existingProperties, error: countError } = await supabase
-      .from('properties')
-      .select('id', { count: 'exact', head: false })
-      .eq('landlord_id', landlordId);
+    // Check user's subscription tier
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('tier, status')
+      .eq('user_id', landlordId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (countError) throw countError;
+    // Default to free tier if no active subscription found
+    const userTier = subscription?.tier || 'free';
 
-    const FREE_LISTING_LIMIT = 3;
+    // Check tier limits - Free tier: max 3 property listings, Premium: unlimited
+    if (userTier === 'free') {
+      const { data: existingProperties, error: countError } = await supabase
+        .from('properties')
+        .select('id', { count: 'exact', head: false })
+        .eq('landlord_id', landlordId);
 
-    // Enforce free tier limit (all users are free tier by default)
-    if (existingProperties && existingProperties.length >= FREE_LISTING_LIMIT) {
-      throw new Error(`Free tier limit reached. You can only have ${FREE_LISTING_LIMIT} property listings. Upgrade to premium for unlimited listings.`);
+      if (countError) throw countError;
+
+      const FREE_LISTING_LIMIT = 3;
+
+      // Enforce free tier limit
+      if (existingProperties && existingProperties.length >= FREE_LISTING_LIMIT) {
+        throw new Error(`Free tier limit reached. You can only have ${FREE_LISTING_LIMIT} property listings. Upgrade to premium for unlimited listings.`);
+      }
     }
+    // Premium users have unlimited listings - no check needed
 
     // Insert property
     const { data: property, error: propertyError } = await supabase

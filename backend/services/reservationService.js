@@ -41,23 +41,38 @@ export const createReservation = async (studentId, propertyId, message = '') => 
       throw new Error('You already have an active reservation for this property');
     }
 
-    // Check tier limits - Free tier: max 2 active reservations
-    // For now, assume all users are on free tier (default behavior)
-    // Count reservations with status 'reserved' or 'approved' (active reservations)
-    const { data: activeReservations, error: countError } = await supabase
-      .from('reservations')
-      .select('id', { count: 'exact', head: false })
-      .eq('student_id', studentId)
-      .in('status', ['reserved', 'approved']);
+    // Check user's subscription tier
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('tier, status')
+      .eq('user_id', studentId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (countError) throw countError;
+    // Default to free tier if no active subscription found
+    const userTier = subscription?.tier || 'free';
 
-    const FREE_RESERVATION_LIMIT = 2;
+    // Check tier limits - Free tier: max 2 active reservations, Premium: unlimited
+    if (userTier === 'free') {
+      // Count reservations with status 'reserved' or 'approved' (active reservations)
+      const { data: activeReservations, error: countError } = await supabase
+        .from('reservations')
+        .select('id', { count: 'exact', head: false })
+        .eq('student_id', studentId)
+        .in('status', ['reserved', 'approved']);
 
-    // Enforce free tier limit (all users are free tier by default)
-    if (activeReservations && activeReservations.length >= FREE_RESERVATION_LIMIT) {
-      throw new Error(`Free tier limit reached. You can only have ${FREE_RESERVATION_LIMIT} active reservations. Upgrade to premium for unlimited reservations.`);
+      if (countError) throw countError;
+
+      const FREE_RESERVATION_LIMIT = 2;
+
+      // Enforce free tier limit
+      if (activeReservations && activeReservations.length >= FREE_RESERVATION_LIMIT) {
+        throw new Error(`Free tier limit reached. You can only have ${FREE_RESERVATION_LIMIT} active reservations. Upgrade to premium for unlimited reservations.`);
+      }
     }
+    // Premium users have unlimited reservations - no check needed
 
     // Calculate expiry date (48 hours from now)
     const expiryDate = new Date();
